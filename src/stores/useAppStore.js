@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { db, getPersons, getTasksForPersonAndDate, getCompletionsForPersonDate, getDailySummariesForRange } from '../db/database'
+import { db, getPersons, getTasksForPersonAndDate, getCompletionsForPersonDate, getDailySummariesForRange, getGlobalTasksForDate } from '../db/database'
 import { getDayScore, getPeriodScore, getTotalScore, getTotalCompletions, refreshDailySummary } from '../services/gamificationService'
 import { calculateStreak, closeMissedDays, updateBestStreak } from '../services/streakService'
 import { buildRanking } from '../services/rankingService'
@@ -8,6 +8,7 @@ import { todayStr, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from '../s
 const useAppStore = create((set, get) => ({
   persons: [],
   personStates: [],
+  globalChallenges: [],
   ranking: [],
   activeTab: 0,
   isLoading: true,
@@ -47,7 +48,9 @@ const useAppStore = create((set, get) => ({
             ])
 
           const completedIds = new Set(completions.map(c => c.taskId))
-          const tasksWithDone = tasks.map(t => ({ ...t, isDone: completedIds.has(t.id) }))
+          const tasksWithDone = tasks
+            .filter(t => !t.isGlobal)
+            .map(t => ({ ...t, isDone: completedIds.has(t.id) }))
           const allDone = tasksWithDone.length > 0 && tasksWithDone.every(t => t.isDone)
 
           return {
@@ -64,13 +67,67 @@ const useAppStore = create((set, get) => ({
         })
       )
 
+      const rawGlobals = await getGlobalTasksForDate(today)
+      const globalChallenges = rawGlobals.map(t => ({
+        ...t,
+        winnerName: t.globalWinnerId
+          ? persons.find(p => p.id === t.globalWinnerId)?.name || null
+          : null,
+      }))
+
       const ranking = await buildRanking()
 
-      set({ persons, personStates, ranking, isLoading: false, lastLoadedDate: today })
+      set({ persons, personStates, globalChallenges, ranking, isLoading: false, lastLoadedDate: today })
     } catch (err) {
       console.error('loadAll error:', err)
       set({ isLoading: false })
     }
+  },
+
+  claimGlobalChallenge: async (taskId, personId) => {
+    const { globalChallenges, persons } = get()
+    const task = globalChallenges.find(t => t.id === taskId)
+    if (!task || task.globalWinnerId) return
+
+    await db.tasks.update(taskId, { globalWinnerId: personId })
+
+    const today = todayStr()
+    const already = await db.taskCompletions.where('[taskId+date]').equals([taskId, today]).first()
+    if (!already) {
+      await db.taskCompletions.add({
+        taskId,
+        personId,
+        date: today,
+        pointsSnapshot: task.points,
+        completedAt: new Date().toISOString(),
+      })
+    }
+    await refreshDailySummary(personId, today)
+
+    const winnerName = persons.find(p => p.id === personId)?.name || null
+    set(state => ({
+      globalChallenges: state.globalChallenges.map(t =>
+        t.id === taskId ? { ...t, globalWinnerId: personId, winnerName } : t
+      ),
+    }))
+
+    const ranking = await buildRanking()
+    const week = { start: startOfWeek(today), end: endOfWeek(today) }
+    const month = { start: startOfMonth(today), end: endOfMonth(today) }
+    const [dayScore, weekScore, monthScore, totalScore, streak] = await Promise.all([
+      getDayScore(personId, today),
+      getPeriodScore(personId, week.start, week.end),
+      getPeriodScore(personId, month.start, month.end),
+      getTotalScore(personId),
+      updateBestStreak(personId),
+    ])
+
+    set(state => ({
+      ranking,
+      personStates: state.personStates.map(ps =>
+        ps.person.id === personId ? { ...ps, dayScore, weekScore, monthScore, totalScore, streak } : ps
+      ),
+    }))
   },
 
   toggleTask: async (taskId, personId, currentlyDone) => {
@@ -138,11 +195,23 @@ const useAppStore = create((set, get) => ({
       getCompletionsForPersonDate(personId, today),
     ])
     const completedIds = new Set(completions.map(c => c.taskId))
-    const tasksWithDone = tasks.map(t => ({ ...t, isDone: completedIds.has(t.id) }))
+    const tasksWithDone = tasks
+      .filter(t => !t.isGlobal)
+      .map(t => ({ ...t, isDone: completedIds.has(t.id) }))
     const dayScore = tasksWithDone.filter(t => t.isDone).reduce((s, t) => s + t.points, 0)
     const allDone = tasksWithDone.length > 0 && tasksWithDone.every(t => t.isDone)
 
+    const rawGlobals = await getGlobalTasksForDate(today)
+    const { persons } = get()
+    const globalChallenges = rawGlobals.map(t => ({
+      ...t,
+      winnerName: t.globalWinnerId
+        ? persons.find(p => p.id === t.globalWinnerId)?.name || null
+        : null,
+    }))
+
     set(state => ({
+      globalChallenges,
       personStates: state.personStates.map(ps =>
         ps.person.id === personId ? { ...ps, tasks: tasksWithDone, dayScore, allDone } : ps
       )

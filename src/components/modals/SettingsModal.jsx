@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X } from 'lucide-react'
-import { db } from '../../db/database'
+import { X, Download, Upload, AlertTriangle } from 'lucide-react'
+import { db, exportAllData, importAllData } from '../../db/database'
 import { useShallow } from 'zustand/react/shallow'
 import useAppStore from '../../stores/useAppStore'
 
@@ -14,6 +14,10 @@ export default function SettingsModal({ open, onClose }) {
   })))
   const [fields, setFields] = useState([])
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState(null)
+  const fileRef = useRef(null)
 
   useEffect(() => {
     if (open && personStates.length > 0) {
@@ -36,6 +40,42 @@ export default function SettingsModal({ open, onClose }) {
     onClose()
   }
 
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const data = await exportAllData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `controle-rotina-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleImport(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      if (!data.persons || !data.tasks) throw new Error('Arquivo inválido')
+      await importAllData(data)
+      await loadAll()
+      setImportMsg({ type: 'success', text: 'Dados importados com sucesso!' })
+    } catch {
+      setImportMsg({ type: 'error', text: 'Erro ao importar. Verifique o arquivo.' })
+    } finally {
+      setImporting(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
   if (!open) return null
 
   return (
@@ -52,13 +92,24 @@ export default function SettingsModal({ open, onClose }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-          className="bg-surface w-full tablet:max-w-md rounded-t-[24px] tablet:rounded-card border border-border"
+          className="bg-surface w-full tablet:max-w-md rounded-t-[24px] tablet:rounded-card border border-border overflow-y-auto"
+          style={{ maxHeight: '90vh' }}
         >
           <div className="flex items-center justify-between p-5 border-b border-border">
             <h2 className="font-extrabold text-lg text-textprimary">Configurações</h2>
             <button onClick={onClose} className="p-2 rounded-full hover:bg-elevated transition-colors cursor-pointer">
               <X size={20} className="text-textsecondary" />
             </button>
+          </div>
+
+          <div className="p-4 mx-5 mt-5 rounded-card border border-yellow-500/30 bg-yellow-500/8 flex gap-3">
+            <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-yellow-400 mb-1">Dados salvos apenas neste navegador</p>
+              <p className="text-xs text-textsecondary leading-relaxed">
+                Os dados ficam armazenados localmente aqui neste dispositivo e perfil do navegador. Para não perder tudo, <strong className="text-yellow-300">exporte o backup regularmente</strong> e importe quando trocar de navegador ou dispositivo.
+              </p>
+            </div>
           </div>
 
           <div className="p-5 space-y-5">
@@ -75,7 +126,6 @@ export default function SettingsModal({ open, onClose }) {
                       value={f.name}
                       onChange={e => setFields(prev => prev.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
                       className="w-full bg-elevated border border-border rounded-md2 px-3 py-2.5 text-sm text-textprimary outline-none transition-colors"
-                      style={{ '--tw-ring-color': COLORS[i] }}
                     />
                   </div>
                   <div>
@@ -95,7 +145,35 @@ export default function SettingsModal({ open, onClose }) {
             ))}
           </div>
 
-          <div className="p-5 border-t border-border">
+          <div className="px-5 pb-2 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-textdisabled">Backup de dados</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-card border border-border text-sm font-semibold text-textsecondary hover:bg-elevated transition-all cursor-pointer disabled:opacity-60"
+              >
+                <Download size={15} />
+                {exporting ? 'Exportando...' : 'Exportar backup'}
+              </button>
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={importing}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-card border border-border text-sm font-semibold text-textsecondary hover:bg-elevated transition-all cursor-pointer disabled:opacity-60"
+              >
+                <Upload size={15} />
+                {importing ? 'Importando...' : 'Importar backup'}
+              </button>
+              <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </div>
+            {importMsg && (
+              <p className={`text-xs font-medium px-3 py-2 rounded-md ${importMsg.type === 'success' ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
+                {importMsg.text}
+              </p>
+            )}
+          </div>
+
+          <div className="p-5 border-t border-border mt-3">
             <button
               onClick={handleSave}
               disabled={saving}

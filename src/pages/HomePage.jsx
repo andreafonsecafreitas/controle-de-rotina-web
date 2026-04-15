@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Settings, ListTodo, RefreshCw } from 'lucide-react'
+import { Settings, RefreshCw } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import useAppStore from '../stores/useAppStore'
 import TodayTab from '../components/tabs/TodayTab'
@@ -72,9 +72,11 @@ export default function HomePage() {
           <button
             onClick={() => openManageTasks(null)}
             className="p-2 rounded-full hover:bg-surface transition-colors cursor-pointer"
-            title="Gerenciar tarefas"
+            title="Adicionar tarefa"
           >
-            <ListTodo size={18} className="text-textsecondary" />
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-textsecondary">
+              <path d="M9 3V15M3 9H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
           <button
             onClick={() => setSettingsOpen(true)}

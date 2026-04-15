@@ -9,6 +9,19 @@ db.version(1).stores({
   dailySummary: '++id, personId, date, pointsEarned, metaSnapshot, goalReached, [personId+date]',
 })
 
+db.version(2).stores({
+  persons: '++id, name, metaPoints, bestStreak, createdAt',
+  tasks: '++id, personId, name, points, icon, sortOrder, isActive, recurrenceDays, scheduledDate, isGlobal, globalWinnerId, createdAt, [personId+isActive]',
+  taskCompletions: '++id, taskId, personId, date, pointsSnapshot, completedAt, [taskId+date], [personId+date]',
+  dailySummary: '++id, personId, date, pointsEarned, metaSnapshot, goalReached, [personId+date]',
+}).upgrade(tx => {
+  return tx.table('tasks').toCollection().modify(task => {
+    if (task.scheduledDate === undefined) task.scheduledDate = null
+    if (task.isGlobal === undefined) task.isGlobal = 0
+    if (task.globalWinnerId === undefined) task.globalWinnerId = null
+  })
+})
+
 export async function isSetupDone() {
   const count = await db.persons.count()
   return count >= 2
@@ -29,8 +42,19 @@ export async function getTasksForPersonAndDate(personId, dateStr) {
   const tasks = await db.tasks.where({ personId, isActive: 1 }).sortBy('sortOrder')
 
   return tasks.filter(t => {
+    if (t.scheduledDate) {
+      return t.scheduledDate === dateStr
+    }
     if (!t.recurrenceDays || t.recurrenceDays.length === 0) return true
     return t.recurrenceDays.includes(weekday)
+  })
+}
+
+export async function getGlobalTasksForDate(dateStr) {
+  const allTasks = await db.tasks.where({ isActive: 1, isGlobal: 1 }).sortBy('sortOrder')
+  return allTasks.filter(t => {
+    if (t.scheduledDate) return t.scheduledDate === dateStr
+    return true
   })
 }
 
@@ -57,4 +81,28 @@ export async function upsertDailySummary(personId, dateStr, pointsEarned, metaSn
   } else {
     await db.dailySummary.add({ personId, date: dateStr, pointsEarned, metaSnapshot, goalReached })
   }
+}
+
+export async function exportAllData() {
+  const [persons, tasks, completions, summaries] = await Promise.all([
+    db.persons.toArray(),
+    db.tasks.toArray(),
+    db.taskCompletions.toArray(),
+    db.dailySummary.toArray(),
+  ])
+  return { persons, tasks, completions, summaries, exportedAt: new Date().toISOString(), version: 2 }
+}
+
+export async function importAllData(data) {
+  await db.transaction('rw', db.persons, db.tasks, db.taskCompletions, db.dailySummary, async () => {
+    await db.persons.clear()
+    await db.tasks.clear()
+    await db.taskCompletions.clear()
+    await db.dailySummary.clear()
+
+    if (data.persons?.length) await db.persons.bulkAdd(data.persons)
+    if (data.tasks?.length) await db.tasks.bulkAdd(data.tasks)
+    if (data.completions?.length) await db.taskCompletions.bulkAdd(data.completions)
+    if (data.summaries?.length) await db.dailySummary.bulkAdd(data.summaries)
+  })
 }
