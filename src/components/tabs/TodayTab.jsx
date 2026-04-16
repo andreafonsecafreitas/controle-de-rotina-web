@@ -22,11 +22,11 @@ export default function TodayTab({ onManageTasks }) {
               className="bg-white/[0.02] backdrop-blur-sm rounded-3xl p-5 border"
               style={{ borderColor: COLORS[i] + '26' }}
             >
-              <PersonColumn
-                personState={ps}
-                index={i}
-                onManageTasks={() => onManageTasks(ps.person.id)}
-              />
+            <PersonColumn
+              personState={ps}
+              index={i}
+              onManageTasks={onManageTasks}
+            />
             </div>
           ))}
         </div>
@@ -67,7 +67,7 @@ export default function TodayTab({ onManageTasks }) {
           <PersonColumn
             personState={personStates[activePerson]}
             index={activePerson}
-            onManageTasks={() => onManageTasks(personStates[activePerson].person.id)}
+            onManageTasks={onManageTasks}
           />
         </div>
       </div>

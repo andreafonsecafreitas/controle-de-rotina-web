@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
 import useAppStore from '../../stores/useAppStore'
@@ -31,7 +32,7 @@ export default function GlobalChallengesSection() {
   )
 }
 
-function GlobalChallengeCard({ task, personStates, onClaim }) {
+const GlobalChallengeCard = memo(function GlobalChallengeCard({ task, personStates, onClaim }) {
   const isWon = !!task.globalWinnerId
   const winnerIdx = personStates.findIndex(ps => ps.person.id === task.globalWinnerId)
   const winnerColor = winnerIdx >= 0 ? COLORS[winnerIdx] : '#FFD700'
@@ -92,4 +93,4 @@ function GlobalChallengeCard({ task, personStates, onClaim }) {
       )}
     </motion.div>
   )
-}
+})

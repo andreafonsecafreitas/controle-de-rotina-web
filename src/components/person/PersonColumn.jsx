@@ -76,7 +76,7 @@ function PersonColumn({ personState, index, onManageTasks }) {
             subtitle="Adicione tarefas para começar"
             action={
               <button
-                onClick={onManageTasks}
+                onClick={() => onManageTasks(personState.person.id)}
                 className="text-xs font-semibold px-4 py-2 rounded-full cursor-pointer transition-colors"
                 style={{ background: `${colorHex}20`, color: colorHex }}
               >

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, memo, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Trash2, Calendar, Trophy, Pencil, Search } from 'lucide-react'
 import { getTasksForPerson, addTask, updateTask } from '../../db/database'
@@ -17,40 +17,15 @@ const WEEKDAYS = [
 ]
 
 const EMOJI_CATEGORIES = [
-  {
-    label: 'Higiene',
-    items: ['🚿','🛁','🪥','🧼','🪒','💊','🩺','🏥','🧴','💉','🩹','🧻','👁️','💆','🦷','✂️','🧖','💅','🧽','🪮'],
-  },
-  {
-    label: 'Esporte',
-    items: ['💪','🏃','🚶','🧘','🏋️','🤸','🚴','🏊','⚽','🏀','🎾','🥊','🧗','🏄','🤾','🏇','⛹️','🤼','🥋','🎽'],
-  },
-  {
-    label: 'Comida',
-    items: ['🥗','🥤','💧','🍎','🥦','🍳','🥙','🍱','🥑','🍇','🥕','🫖','☕','🍵','🥞','🌮','🥜','🫐','🍓','🥝'],
-  },
-  {
-    label: 'Estudo',
-    items: ['📚','📖','✏️','📝','💻','🖥️','📊','📈','🔬','🎓','🏫','📐','🔭','📓','🖊️','📋','🗂️','📌','🗓️','⌨️'],
-  },
-  {
-    label: 'Casa',
-    items: ['🧹','🧺','🍽️','🛏️','🛒','🔧','🏠','🌿','🪴','🕯️','🪟','🚪','🪑','🛋️','🪞','🗑️','🧻','🔑','🧼','🧯'],
-  },
-  {
-    label: 'Objetivos',
-    items: ['💰','💳','📱','💼','🎯','🏆','⭐','🌟','🎖️','🥇','🏅','✅','💡','🗝️','📅','⏰','⌚','🔔','📣','🚀'],
-  },
-  {
-    label: 'Lazer',
-    items: ['🎨','🎵','🎮','🎭','🎬','📷','🌅','🌄','🏖️','🌳','🎲','🎸','🎹','✍️','🧩','🛀','😴','🌙','🎪','🎡'],
-  },
-  {
-    label: 'Social',
-    items: ['🤝','👨‍⚕️','👩‍⚕️','🏪','✈️','🚗','🚌','🚂','🏦','🏛️','⛪','💌','📞','📬','🗣️','👥','🤗','🎁','🎉','🥂'],
-  },
+  { label: 'Higiene', items: ['🚿','🛁','🪥','🧼','🪒','💊','🩺','🏥','🧴','💉','🩹','🧻','👁️','💆','🦷','✂️','🧖','💅','🧽','🪮'] },
+  { label: 'Esporte', items: ['💪','🏃','🚶','🧘','🏋️','🤸','🚴','🏊','⚽','🏀','🎾','🥊','🧗','🏄','🤾','🏇','⛹️','🤼','🥋','🎽'] },
+  { label: 'Comida', items: ['🥗','🥤','💧','🍎','🥦','🍳','🥙','🍱','🥑','葡萄','🥕','🫖','☕','🍵','🥞','🌮','🥜','🫐','🍓','🥝'] },
+  { label: 'Estudo', items: ['📚','📖','✏️','📝','💻','🖥️','📊','📈','🔬','🎓','🏫','📐','🔭','📓','🖊️','📋','🗂️','📌','🗓️','⌨️'] },
+  { label: 'Casa', items: ['🧹','🧺','🍽️','🛏️','🛒','🔧','🏠','🌿','🪴','🕯️','🪟','🚪','🪑','🛋️','🪞','🗑️','🧻','🔑','🧼','🧯'] },
+  { label: 'Objetivos', items: ['💰','💳','📱','💼','🎯','🏆','⭐','🌟','🎖️','🥇','🏅','✅','💡','🗝️','📅','⏰','⌚','🔔','📣','🚀'] },
+  { label: 'Lazer', items: ['🎨','🎵','🎮','🎭','🎬','📷','🌅','🌄','🏖️','🌳','🎲','🎸','🎹','✍️','🧩','🛀','😴','🌙','🎪','🎡'] },
+  { label: 'Social', items: ['🤝','👨‍⚕️','👩‍⚕️','🏪','✈️','🚗','🚌','🚂','🏦','🏛️','⛪','💌','📞','📬','🗣️','👥','🤗','🎁','🎉','🥂'] },
 ]
-
 const ALL_EMOJIS = EMOJI_CATEGORIES.flatMap(c => c.items)
 
 export default function ManageTasksModal({ open, onClose, initialPersonId }) {
@@ -60,45 +35,27 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
 
   const [activePersonIdx, setActivePersonIdx] = useState(0)
   const [tasks, setTasks] = useState([])
-  const [editingId, setEditingId] = useState(null)
+  const [editingTask, setEditingTask] = useState(null)
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState(emptyForm())
-  const [emojiSearch, setEmojiSearch] = useState('')
-  const [emojiCatIdx, setEmojiCatIdx] = useState(0)
-  const [loading, setLoading] = useState(false)
 
   const activePerson = personStates[activePersonIdx]?.person
   const colorHex = COLORS[activePersonIdx]
-
-  function emptyForm() {
-    return {
-      name: '',
-      points: 20,
-      icon: '⭐',
-      recurrenceDays: [],
-      scheduledDate: '',
-      isGlobal: false,
-      forBoth: false,
-    }
-  }
 
   useEffect(() => {
     if (open && initialPersonId) {
       const idx = personStates.findIndex(ps => ps.person.id === initialPersonId)
       if (idx >= 0) setActivePersonIdx(idx)
     }
-  }, [open, initialPersonId])
+  }, [open, initialPersonId, personStates])
 
   useEffect(() => {
     if (open && activePerson) loadTasks()
-  }, [open, activePersonIdx, activePerson])
+  }, [open, activePersonIdx, activePerson?.id])
 
   useEffect(() => {
     if (!open) {
       setShowNew(false)
-      setEditingId(null)
-      setForm(emptyForm())
-      setEmojiSearch('')
+      setEditingTask(null)
     }
   }, [open])
 
@@ -108,39 +65,31 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
     setTasks(t)
   }
 
-  function openNew() {
-    setEditingId(null)
-    setForm(emptyForm())
+  const openNew = useCallback(() => {
+    setEditingTask(null)
     setShowNew(true)
-  }
+  }, [])
 
-  function openEdit(task) {
-    setEditingId(task.id)
-    setForm({
-      name: task.name,
-      points: task.points,
-      icon: task.icon || '⭐',
-      recurrenceDays: task.recurrenceDays || [],
-      scheduledDate: task.scheduledDate || '',
-      isGlobal: task.isGlobal === 1,
-      forBoth: false,
-    })
+  const openEdit = useCallback((task) => {
+    setEditingTask(task)
     setShowNew(true)
-  }
+  }, [])
 
-  function closeForm() {
+  const closeForm = useCallback(() => {
     setShowNew(false)
-    setEditingId(null)
-    setForm(emptyForm())
-    setEmojiSearch('')
+    setEditingTask(null)
+  }, [])
+
+  async function getMaxSortOrder(personId) {
+    const t = await getTasksForPerson(personId)
+    return t.length > 0 ? Math.max(...t.map(x => x.sortOrder)) + 1 : 0
   }
 
-  async function saveTask() {
+  const handleSaveTask = useCallback(async (form) => {
     if (!form.name.trim()) return
-    setLoading(true)
 
-    if (editingId) {
-      await updateTask(editingId, {
+    if (editingTask) {
+      await updateTask(editingTask.id, {
         name: form.name.trim(),
         points: form.points,
         icon: form.icon,
@@ -185,46 +134,13 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
       await reloadPersonTasks(activePerson.id)
     }
     closeForm()
-    setLoading(false)
-  }
+  }, [editingTask, personStates, activePerson, closeForm, reloadPersonData, reloadPersonTasks])
 
-  async function getMaxSortOrder(personId) {
-    const t = await getTasksForPerson(personId)
-    return t.length > 0 ? Math.max(...t.map(x => x.sortOrder)) + 1 : 0
-  }
-
-  async function deleteTask(taskId) {
+  const deleteTask = useCallback(async (taskId) => {
     await updateTask(taskId, { isActive: 0 })
     await loadTasks()
     if (activePerson) await reloadPersonTasks(activePerson.id)
-  }
-
-  function toggleDay(dayNum) {
-    setForm(f => ({
-      ...f,
-      recurrenceDays: f.recurrenceDays.includes(dayNum)
-        ? f.recurrenceDays.filter(d => d !== dayNum)
-        : [...f.recurrenceDays, dayNum].sort((a, b) => a - b),
-    }))
-  }
-
-  function getRecurrenceLabel(task) {
-    if (task.scheduledDate) {
-      const d = new Date(task.scheduledDate + 'T00:00:00')
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-    }
-    if (!task.recurrenceDays || task.recurrenceDays.length === 0) return 'Todos os dias'
-    if (task.recurrenceDays.length === 7) return 'Todos os dias'
-    if (task.recurrenceDays.length === 5 && task.recurrenceDays.every(d => d <= 5)) return 'Dias úteis'
-    if (task.recurrenceDays.length === 2 && task.recurrenceDays.includes(6) && task.recurrenceDays.includes(7)) return 'Fim de semana'
-    return task.recurrenceDays
-      .map(d => WEEKDAYS.find(w => w.num === d)?.label.slice(0, 3))
-      .join(', ')
-  }
-
-  const filteredEmojis = emojiSearch.trim()
-    ? ALL_EMOJIS
-    : EMOJI_CATEGORIES[emojiCatIdx]?.items || []
+  }, [activePerson])
 
   if (!open) return null
 
@@ -306,9 +222,8 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
                 key={task.id}
                 task={task}
                 colorHex={colorHex}
-                recurrenceLabel={getRecurrenceLabel(task)}
-                onEdit={() => openEdit(task)}
-                onDelete={() => deleteTask(task.id)}
+                onEdit={openEdit}
+                onDelete={deleteTask}
               />
             ))}
           </div>
@@ -316,20 +231,11 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
           <AnimatePresence>
             {showNew && (
               <NewTaskSheet
-                form={form}
-                setForm={setForm}
-                editingId={editingId}
+                initialTask={editingTask}
                 personStates={personStates}
                 activePersonIdx={activePersonIdx}
-                emojiSearch={emojiSearch}
-                setEmojiSearch={setEmojiSearch}
-                emojiCatIdx={emojiCatIdx}
-                setEmojiCatIdx={setEmojiCatIdx}
-                filteredEmojis={filteredEmojis}
-                toggleDay={toggleDay}
-                onSave={saveTask}
+                onSave={handleSaveTask}
                 onCancel={closeForm}
-                loading={loading}
                 colorHex={colorHex}
               />
             )}
@@ -340,10 +246,25 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
   )
 }
 
-function TaskRow({ task, colorHex, recurrenceLabel, onEdit, onDelete }) {
+function getRecurrenceLabel(task) {
+  if (task.scheduledDate) {
+    const d = new Date(task.scheduledDate + 'T00:00:00')
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  }
+  if (!task.recurrenceDays || task.recurrenceDays.length === 0) return 'Todos os dias'
+  if (task.recurrenceDays.length === 7) return 'Todos os dias'
+  if (task.recurrenceDays.length === 5 && task.recurrenceDays.every(d => d <= 5)) return 'Dias úteis'
+  if (task.recurrenceDays.length === 2 && task.recurrenceDays.includes(6) && task.recurrenceDays.includes(7)) return 'Fim de semana'
+  return task.recurrenceDays
+    .map(d => WEEKDAYS.find(w => w.num === d)?.label.slice(0, 3))
+    .join(', ')
+}
+
+const TaskRow = memo(function TaskRow({ task, colorHex, onEdit, onDelete }) {
   const isGlobal = task.isGlobal === 1
   const iconBg = isGlobal ? '#FFD70015' : colorHex + '15'
   const iconBorder = isGlobal ? '#FFD70040' : colorHex + '35'
+  const recurrenceLabel = useMemo(() => getRecurrenceLabel(task), [task.recurrenceDays, task.scheduledDate])
 
   return (
     <div className="group flex items-center gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
@@ -368,13 +289,13 @@ function TaskRow({ task, colorHex, recurrenceLabel, onEdit, onDelete }) {
       </span>
       <div className="flex items-center gap-1">
         <button
-          onClick={onEdit}
+          onClick={() => onEdit(task)}
           className="p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
         >
           <Pencil size={14} className="text-white/50" />
         </button>
         <button
-          onClick={onDelete}
+          onClick={() => onDelete(task.id)}
           className="p-2 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
         >
           <Trash2 size={14} className="text-red-400/70" />
@@ -382,19 +303,109 @@ function TaskRow({ task, colorHex, recurrenceLabel, onEdit, onDelete }) {
       </div>
     </div>
   )
-}
+})
 
-function NewTaskSheet({
-  form, setForm, editingId, personStates, activePersonIdx,
-  emojiSearch, setEmojiSearch, emojiCatIdx, setEmojiCatIdx, filteredEmojis,
-  toggleDay, onSave, onCancel, loading, colorHex,
-}) {
+const EmojiPicker = memo(function EmojiPicker({ formIcon, colorHex, setIcon }) {
+  const [search, setSearch] = useState('')
+  const [catIdx, setCatIdx] = useState(0)
+
+  const filtered = useMemo(() => {
+    return search.trim() ? ALL_EMOJIS : EMOJI_CATEGORIES[catIdx]?.items || []
+  }, [search, catIdx])
+
+  return (
+    <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 space-y-3">
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar ícone..."
+          className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-2 py-2 text-xs text-white outline-none focus:border-white/20 placeholder:text-white/25"
+        />
+      </div>
+      {!search && (
+        <div className="flex gap-1 flex-wrap">
+          {EMOJI_CATEGORIES.map((cat, i) => (
+            <button
+              key={cat.label}
+              onClick={() => setCatIdx(i)}
+              className="text-[10px] px-2.5 py-1 rounded-full transition-colors cursor-pointer font-bold"
+              style={{
+                background: catIdx === i ? colorHex + '25' : 'rgba(255,255,255,0.03)',
+                color: catIdx === i ? colorHex : '#8A8FA8',
+                border: `1px solid ${catIdx === i ? colorHex + '50' : 'rgba(255,255,255,0.05)'}`,
+              }}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="grid grid-cols-8 gap-1 max-h-[112px] overflow-y-auto">
+        {filtered.map(emoji => (
+          <button
+            key={emoji}
+            onClick={() => setIcon(emoji)}
+            className="aspect-square flex items-center justify-center text-xl rounded-lg transition-all cursor-pointer"
+            style={{
+              background: formIcon === emoji ? colorHex + '25' : 'transparent',
+              border: `1px solid ${formIcon === emoji ? colorHex + '60' : 'transparent'}`,
+            }}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+})
+
+function NewTaskSheet({ initialTask, personStates, activePersonIdx, onSave, onCancel, colorHex }) {
+  const [form, setForm] = useState(() => {
+    if (initialTask) {
+      return {
+        name: initialTask.name,
+        points: initialTask.points,
+        icon: initialTask.icon || '⭐',
+        recurrenceDays: initialTask.recurrenceDays || [],
+        scheduledDate: initialTask.scheduledDate || '',
+        isGlobal: initialTask.isGlobal === 1,
+        forBoth: false,
+      }
+    }
+    return {
+      name: '', points: 20, icon: '⭐', recurrenceDays: [], scheduledDate: '', isGlobal: false, forBoth: false
+    }
+  })
+  const [loading, setLoading] = useState(false)
+
+  const toggleDay = useCallback((dayNum) => {
+    setForm(f => ({
+      ...f,
+      recurrenceDays: f.recurrenceDays.includes(dayNum)
+        ? f.recurrenceDays.filter(d => d !== dayNum)
+        : [...f.recurrenceDays, dayNum].sort((a, b) => a - b),
+    }))
+  }, [])
+
+  const handleSave = async () => {
+    setLoading(true)
+    await onSave(form)
+    setLoading(false)
+  }
+
+  const setIcon = useCallback((icon) => {
+    setForm(f => ({ ...f, icon }))
+  }, [])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col justify-end tablet:items-center tablet:justify-center p-0 tablet:p-4"
       onClick={e => e.target === e.currentTarget && onCancel()}
     >
       <motion.div
@@ -402,18 +413,18 @@ function NewTaskSheet({
         animate={{ y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 20, opacity: 0, scale: 0.97 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="w-full max-w-md bg-[#1A1D2E] rounded-3xl border border-white/10 shadow-2xl flex flex-col"
+        className="w-full max-w-md bg-[#1A1D2E] rounded-t-3xl tablet:rounded-3xl border border-white/10 shadow-2xl flex flex-col"
         style={{ maxHeight: '85vh' }}
       >
         <div className="flex items-center justify-between p-5 border-b border-white/5 flex-shrink-0">
-          <h3 className="font-extrabold text-base text-white">{editingId ? 'Editar Tarefa' : 'Nova Tarefa'}</h3>
+          <h3 className="font-extrabold text-base text-white">{initialTask ? 'Editar Tarefa' : 'Nova Tarefa'}</h3>
           <button onClick={onCancel} className="p-1.5 rounded-full hover:bg-white/5 cursor-pointer">
             <X size={16} className="text-white/50" />
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5 space-y-5">
-          {!editingId && (
+        <div className="overflow-y-auto p-5 space-y-5 min-h-0">
+          {!initialTask && (
             <div className="flex gap-2">
               {personStates.map((ps, i) => (
                 <button
@@ -468,51 +479,7 @@ function NewTaskSheet({
 
           <div>
             <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Ícone</label>
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 space-y-3">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="text"
-                  value={emojiSearch}
-                  onChange={e => setEmojiSearch(e.target.value)}
-                  placeholder="Buscar ícone..."
-                  className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-2 py-2 text-xs text-white outline-none focus:border-white/20 placeholder:text-white/25"
-                />
-              </div>
-              {!emojiSearch && (
-                <div className="flex gap-1 flex-wrap">
-                  {EMOJI_CATEGORIES.map((cat, i) => (
-                    <button
-                      key={cat.label}
-                      onClick={() => setEmojiCatIdx(i)}
-                      className="text-[10px] px-2.5 py-1 rounded-full transition-colors cursor-pointer font-bold"
-                      style={{
-                        background: emojiCatIdx === i ? colorHex + '25' : 'rgba(255,255,255,0.03)',
-                        color: emojiCatIdx === i ? colorHex : '#8A8FA8',
-                        border: `1px solid ${emojiCatIdx === i ? colorHex + '50' : 'rgba(255,255,255,0.05)'}`,
-                      }}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="grid grid-cols-8 gap-1 max-h-[112px] overflow-y-auto">
-                {filteredEmojis.map(emoji => (
-                  <button
-                    key={emoji}
-                    onClick={() => setForm(f => ({ ...f, icon: emoji }))}
-                    className="aspect-square flex items-center justify-center text-xl rounded-lg transition-all cursor-pointer"
-                    style={{
-                      background: form.icon === emoji ? colorHex + '25' : 'transparent',
-                      border: `1px solid ${form.icon === emoji ? colorHex + '60' : 'transparent'}`,
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <EmojiPicker formIcon={form.icon} colorHex={colorHex} setIcon={setIcon} />
           </div>
 
           <div>
@@ -574,7 +541,7 @@ function NewTaskSheet({
             )}
           </div>
 
-          {!editingId && (
+          {!initialTask && (
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setForm(f => ({ ...f, forBoth: !f.forBoth, isGlobal: false }))}
@@ -636,12 +603,12 @@ function NewTaskSheet({
             Cancelar
           </button>
           <button
-            onClick={onSave}
+            onClick={handleSave}
             disabled={!form.name.trim() || loading}
             className="flex-1 py-3 rounded-xl font-bold text-sm text-white transition-all cursor-pointer disabled:opacity-40"
             style={{ background: `linear-gradient(135deg, ${colorHex}, ${colorHex}dd)`, boxShadow: `0 6px 20px ${colorHex}40` }}
           >
-            {loading ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
+            {loading ? 'Salvando...' : initialTask ? 'Salvar' : 'Adicionar'}
           </button>
         </div>
       </motion.div>
