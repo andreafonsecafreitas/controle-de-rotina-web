@@ -92,10 +92,11 @@ function TaskCard({ task, personId, colorHex, subtitle }) {
 
         <div className="flex-1 min-w-0">
           <p
-            className="text-sm font-semibold leading-snug truncate transition-all duration-200"
+            className="text-sm font-semibold leading-snug break-words transition-all duration-200"
             style={{
               color: task.isDone ? 'rgba(255,255,255,0.35)' : '#EAEAEA',
               textDecoration: task.isDone ? 'line-through' : 'none',
+              wordBreak: 'break-word'
             }}
           >
             {task.name}

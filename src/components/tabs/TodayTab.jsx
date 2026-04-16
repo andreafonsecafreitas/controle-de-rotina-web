@@ -19,7 +19,7 @@ export default function TodayTab({ onManageTasks }) {
           {personStates.map((ps, i) => (
             <div
               key={ps.person.id}
-              className="bg-white/[0.02] backdrop-blur-sm rounded-3xl p-5 border"
+              className="bg-[#121520] rounded-3xl p-5 border"
               style={{ borderColor: COLORS[i] + '26' }}
             >
             <PersonColumn
@@ -61,7 +61,7 @@ export default function TodayTab({ onManageTasks }) {
         </div>
 
         <div
-          className="flex-1 bg-white/[0.02] rounded-3xl p-5 border overflow-hidden"
+          className="flex-1 bg-[#121520] rounded-3xl p-5 border overflow-hidden"
           style={{ borderColor: COLORS[activePerson] + '26' }}
         >
           <PersonColumn

@@ -150,7 +150,7 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end tablet:items-center justify-center bg-black/70 backdrop-blur-md px-0 tablet:px-4"
+        className="fixed inset-0 z-50 flex items-end tablet:items-center justify-center bg-black/85 px-0 tablet:px-4"
         onClick={e => e.target === e.currentTarget && onClose()}
       >
         <motion.div
@@ -276,8 +276,8 @@ const TaskRow = memo(function TaskRow({ task, colorHex, onEdit, onDelete }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-semibold text-white truncate">{task.name}</p>
-          {isGlobal && <Trophy size={11} className="text-yellow-400 flex-shrink-0" />}
+          <p className="text-sm font-semibold text-white break-words" style={{ wordBreak: 'break-word', whiteSpace: 'normal', display: 'block' }}>{task.name}</p>
+          {isGlobal && <Trophy size={11} className="text-yellow-400 flex-shrink-0 mt-1" />}
         </div>
         <p className="text-xs text-white/40 mt-0.5">{recurrenceLabel}</p>
       </div>
@@ -405,7 +405,7 @@ function NewTaskSheet({ initialTask, personStates, activePersonIdx, onSave, onCa
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex flex-col justify-end tablet:items-center tablet:justify-center p-0 tablet:p-4"
+      className="absolute inset-0 z-10 bg-black/85 flex flex-col justify-end tablet:items-center tablet:justify-center p-0 tablet:p-4"
       onClick={e => e.target === e.currentTarget && onCancel()}
     >
       <motion.div
