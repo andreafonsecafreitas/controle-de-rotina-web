@@ -1,4 +1,4 @@
-import { db } from '../db/database'
+import { bulkAddTasks } from '../db/database'
 
 const DEFAULT_TASKS = [
   { name: 'Exercício físico', points: 30, icon: '💪', recurrenceDays: [] },
@@ -17,14 +17,11 @@ const DEFAULT_TASKS_2 = [
 ]
 
 export async function seedDefaultTasks(person1Id, person2Id) {
-  const now = new Date().toISOString()
-
   const tasks1 = DEFAULT_TASKS.map((t, i) => ({
     ...t,
     personId: person1Id,
     sortOrder: i,
     isActive: 1,
-    createdAt: now,
   }))
 
   const tasks2 = DEFAULT_TASKS_2.map((t, i) => ({
@@ -32,8 +29,7 @@ export async function seedDefaultTasks(person1Id, person2Id) {
     personId: person2Id,
     sortOrder: i,
     isActive: 1,
-    createdAt: now,
   }))
 
-  await db.tasks.bulkAdd([...tasks1, ...tasks2])
+  await bulkAddTasks([...tasks1, ...tasks2])
 }

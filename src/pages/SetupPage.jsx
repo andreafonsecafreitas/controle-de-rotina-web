@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { db } from '../db/database'
+import { addPerson } from '../db/database'
 import { seedDefaultTasks } from '../services/seedService'
 import { motion } from 'framer-motion'
 
@@ -21,9 +21,8 @@ export default function SetupPage() {
     if (!validate()) return
     setLoading(true)
     try {
-      const now = new Date().toISOString()
-      const id1 = await db.persons.add({ name: names[0].trim(), metaPoints: metas[0], bestStreak: 0, createdAt: now })
-      const id2 = await db.persons.add({ name: names[1].trim(), metaPoints: metas[1], bestStreak: 0, createdAt: now })
+      const id1 = await addPerson({ name: names[0].trim(), metaPoints: metas[0], bestStreak: 0 })
+      const id2 = await addPerson({ name: names[1].trim(), metaPoints: metas[1], bestStreak: 0 })
       await seedDefaultTasks(id1, id2)
       navigate('/home')
     } catch (err) {

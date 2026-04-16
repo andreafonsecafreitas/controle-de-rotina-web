@@ -1,5 +1,17 @@
 import { create } from 'zustand'
-import { db, getPersons, getTasksForPersonAndDate, getCompletionsForPersonDate, getDailySummariesForRange, getGlobalTasksForDate } from '../db/database'
+import {
+  getPersons,
+  getTasksForPersonAndDate,
+  getCompletionsForPersonDate,
+  getDailySummariesForRange,
+  getGlobalTasksForDate,
+  getPersonById,
+  updateTask,
+  bulkUpdateTaskSortOrder,
+  addTaskCompletion,
+  deleteTaskCompletion,
+  getTaskCompletionByTaskDate,
+} from '../db/database'
 import { getDayScore, getPeriodScore, getTotalScore, getTotalCompletions, refreshDailySummary } from '../services/gamificationService'
 import { calculateStreak, closeMissedDays, updateBestStreak } from '../services/streakService'
 import { buildRanking } from '../services/rankingService'
@@ -89,12 +101,12 @@ const useAppStore = create((set, get) => ({
     const task = globalChallenges.find(t => t.id === taskId)
     if (!task || task.globalWinnerId) return
 
-    await db.tasks.update(taskId, { globalWinnerId: personId })
+    await updateTask(taskId, { globalWinnerId: personId })
 
     const today = todayStr()
-    const already = await db.taskCompletions.where('[taskId+date]').equals([taskId, today]).first()
+    const already = await getTaskCompletionByTaskDate(taskId, today)
     if (!already) {
-      await db.taskCompletions.add({
+      await addTaskCompletion({
         taskId,
         personId,
         date: today,
@@ -145,13 +157,13 @@ const useAppStore = create((set, get) => ({
     })
 
     if (currentlyDone) {
-      await db.taskCompletions.where('[taskId+date]').equals([taskId, today]).delete()
+      await deleteTaskCompletion(taskId, today)
     } else {
-      const already = await db.taskCompletions.where('[taskId+date]').equals([taskId, today]).first()
+      const already = await getTaskCompletionByTaskDate(taskId, today)
       if (!already) {
         const task = personStates.find(ps => ps.person.id === personId)?.tasks.find(t => t.id === taskId)
         if (task) {
-          await db.taskCompletions.add({
+          await addTaskCompletion({
             taskId,
             personId,
             date: today,
@@ -169,7 +181,7 @@ const useAppStore = create((set, get) => ({
 
     const [completions, person, streak, totalScore, weekScore, monthScore] = await Promise.all([
       getCompletionsForPersonDate(personId, today),
-      db.persons.get(personId),
+      getPersonById(personId),
       updateBestStreak(personId),
       getTotalScore(personId),
       getPeriodScore(personId, week.start, week.end),
@@ -220,6 +232,21 @@ const useAppStore = create((set, get) => ({
 
   reloadPersonData: async () => {
     await get().loadAll()
+  },
+
+  reorderTasks: async (personId, orderedTaskIds) => {
+    set(state => ({
+      personStates: state.personStates.map(ps => {
+        if (ps.person.id !== personId) return ps
+        const taskMap = new Map(ps.tasks.map(t => [t.id, t]))
+        const reordered = orderedTaskIds.map(id => taskMap.get(id)).filter(Boolean)
+        return { ...ps, tasks: reordered }
+      }),
+    }))
+
+    await bulkUpdateTaskSortOrder(
+      orderedTaskIds.map((id, i) => ({ id, sortOrder: i }))
+    )
   },
 }))
 

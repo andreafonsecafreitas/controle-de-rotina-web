@@ -1,14 +1,18 @@
-import { db, getDailySummary, upsertDailySummary } from '../db/database'
+import {
+  getPersonById,
+  updatePerson,
+  getDailySummary,
+  upsertDailySummary,
+  getOldestCompletionsByPerson,
+} from '../db/database'
 import { todayStr, subtractDays } from './dateUtils'
 
 export async function closeMissedDays(personId) {
   const today = todayStr()
-  const person = await db.persons.get(personId)
+  const person = await getPersonById(personId)
   if (!person) return
 
-  const oldest = await db.taskCompletions
-    .where('personId').equals(personId)
-    .sortBy('date')
+  const oldest = await getOldestCompletionsByPerson(personId)
   if (oldest.length === 0) return
 
   const startDate = oldest[0].date
@@ -53,11 +57,11 @@ export async function calculateStreak(personId) {
 
 export async function updateBestStreak(personId) {
   const current = await calculateStreak(personId)
-  const person = await db.persons.get(personId)
+  const person = await getPersonById(personId)
   if (!person) return current
 
   if (current > (person.bestStreak || 0)) {
-    await db.persons.update(personId, { bestStreak: current })
+    await updatePerson(personId, { bestStreak: current })
   }
 
   return current

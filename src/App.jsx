@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { isSetupDone } from './db/database'
+
 import SetupPage from './pages/SetupPage'
 import HomePage from './pages/HomePage'
 

@@ -1,43 +1,53 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Trash2, ChevronUp, ChevronDown, Calendar, Trophy } from 'lucide-react'
-import { db, getTasksForPerson } from '../../db/database'
+import { X, Trash2, Calendar, Trophy, Pencil, Search } from 'lucide-react'
+import { getTasksForPerson, addTask, updateTask } from '../../db/database'
 import useAppStore from '../../stores/useAppStore'
 
 const COLORS = ['#6C63FF', '#FF6584']
 
+const WEEKDAYS = [
+  { num: 1, short: 'S', label: 'Segunda' },
+  { num: 2, short: 'T', label: 'Terça' },
+  { num: 3, short: 'Q', label: 'Quarta' },
+  { num: 4, short: 'Q', label: 'Quinta' },
+  { num: 5, short: 'S', label: 'Sexta' },
+  { num: 6, short: 'S', label: 'Sábado' },
+  { num: 7, short: 'D', label: 'Domingo' },
+]
+
 const EMOJI_CATEGORIES = [
   {
-    label: 'Higiene & Saúde',
-    items: ['🚿','🛁','🪥','🧼','🪒','💊','🩺','🏥','🧴','💉','🩹','🧻','🪣','🫧','👁️','💆','🦷','✂️','🧖','💅'],
+    label: 'Higiene',
+    items: ['🚿','🛁','🪥','🧼','🪒','💊','🩺','🏥','🧴','💉','🩹','🧻','👁️','💆','🦷','✂️','🧖','💅','🧽','🪮'],
   },
   {
-    label: 'Exercício & Esporte',
+    label: 'Esporte',
     items: ['💪','🏃','🚶','🧘','🏋️','🤸','🚴','🏊','⚽','🏀','🎾','🥊','🧗','🏄','🤾','🏇','⛹️','🤼','🥋','🎽'],
   },
   {
-    label: 'Alimentação',
+    label: 'Comida',
     items: ['🥗','🥤','💧','🍎','🥦','🍳','🥙','🍱','🥑','🍇','🥕','🫖','☕','🍵','🥞','🌮','🥜','🫐','🍓','🥝'],
   },
   {
-    label: 'Estudos & Trabalho',
+    label: 'Estudo',
     items: ['📚','📖','✏️','📝','💻','🖥️','📊','📈','🔬','🎓','🏫','📐','🔭','📓','🖊️','📋','🗂️','📌','🗓️','⌨️'],
   },
   {
-    label: 'Casa & Rotina',
-    items: ['🧹','🧺','🍽️','🛏️','🛒','🔧','🏠','🌿','🪴','🕯️','🧹','🪟','🚪','🪑','🛋️','🪞','🗑️','🧽','🧻','🔑'],
+    label: 'Casa',
+    items: ['🧹','🧺','🍽️','🛏️','🛒','🔧','🏠','🌿','🪴','🕯️','🪟','🚪','🪑','🛋️','🪞','🗑️','🧻','🔑','🧼','🧯'],
   },
   {
-    label: 'Finanças & Objetivos',
-    items: ['💰','💳','📱','💼','🎯','🏆','⭐','🌟','🎖️','🥇','🏅','✅','💡','🔑','🗝️','📅','⏰','⌚','🔔','📣'],
+    label: 'Objetivos',
+    items: ['💰','💳','📱','💼','🎯','🏆','⭐','🌟','🎖️','🥇','🏅','✅','💡','🗝️','📅','⏰','⌚','🔔','📣','🚀'],
   },
   {
-    label: 'Bem-estar & Lazer',
-    items: ['🎨','🎵','🎮','🎭','🎬','📷','🌅','🌄','🏖️','🌳','🎲','🎸','🎹','📚','✍️','🧩','🎯','🛀','😴','🌙'],
+    label: 'Lazer',
+    items: ['🎨','🎵','🎮','🎭','🎬','📷','🌅','🌄','🏖️','🌳','🎲','🎸','🎹','✍️','🧩','🛀','😴','🌙','🎪','🎡'],
   },
   {
-    label: 'Social & Compromissos',
-    items: ['🤝','👨‍⚕️','👩‍⚕️','🏪','✈️','🚗','🚌','🚂','🏦','🏛️','⛪','🎪','🎡','🎠','💌','📞','📬','🗣️','👥','🤗'],
+    label: 'Social',
+    items: ['🤝','👨‍⚕️','👩‍⚕️','🏪','✈️','🚗','🚌','🚂','🏦','🏛️','⛪','💌','📞','📬','🗣️','👥','🤗','🎁','🎉','🥂'],
   },
 ]
 
@@ -50,14 +60,27 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
 
   const [activePersonIdx, setActivePersonIdx] = useState(0)
   const [tasks, setTasks] = useState([])
-  const [newTask, setNewTask] = useState({ name: '', points: 20, icon: '⭐', forBoth: false, scheduledDate: '', isGlobal: false })
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [showNew, setShowNew] = useState(false)
+  const [form, setForm] = useState(emptyForm())
   const [emojiSearch, setEmojiSearch] = useState('')
+  const [emojiCatIdx, setEmojiCatIdx] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [activeEmojiCategory, setActiveEmojiCategory] = useState(0)
 
   const activePerson = personStates[activePersonIdx]?.person
   const colorHex = COLORS[activePersonIdx]
+
+  function emptyForm() {
+    return {
+      name: '',
+      points: 20,
+      icon: '⭐',
+      recurrenceDays: [],
+      scheduledDate: '',
+      isGlobal: false,
+      forBoth: false,
+    }
+  }
 
   useEffect(() => {
     if (open && initialPersonId) {
@@ -70,57 +93,98 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
     if (open && activePerson) loadTasks()
   }, [open, activePersonIdx, activePerson])
 
+  useEffect(() => {
+    if (!open) {
+      setShowNew(false)
+      setEditingId(null)
+      setForm(emptyForm())
+      setEmojiSearch('')
+    }
+  }, [open])
+
   async function loadTasks() {
     if (!activePerson) return
     const t = await getTasksForPerson(activePerson.id)
     setTasks(t)
   }
 
-  async function addTask() {
-    if (!newTask.name.trim()) return
+  function openNew() {
+    setEditingId(null)
+    setForm(emptyForm())
+    setShowNew(true)
+  }
+
+  function openEdit(task) {
+    setEditingId(task.id)
+    setForm({
+      name: task.name,
+      points: task.points,
+      icon: task.icon || '⭐',
+      recurrenceDays: task.recurrenceDays || [],
+      scheduledDate: task.scheduledDate || '',
+      isGlobal: task.isGlobal === 1,
+      forBoth: false,
+    })
+    setShowNew(true)
+  }
+
+  function closeForm() {
+    setShowNew(false)
+    setEditingId(null)
+    setForm(emptyForm())
+    setEmojiSearch('')
+  }
+
+  async function saveTask() {
+    if (!form.name.trim()) return
     setLoading(true)
-    const now = new Date().toISOString()
 
-    const taskBase = {
-      name: newTask.name.trim(),
-      points: newTask.points,
-      icon: newTask.icon,
-      sortOrder: 0,
-      isActive: 1,
-      recurrenceDays: [],
-      scheduledDate: newTask.scheduledDate || null,
-      isGlobal: newTask.isGlobal ? 1 : 0,
-      globalWinnerId: null,
-      createdAt: now,
-    }
-
-    if (newTask.isGlobal) {
-      const firstPerson = personStates[0]?.person
-      if (!firstPerson) { setLoading(false); return }
-      const maxOrder = await getMaxSortOrder(firstPerson.id)
-      await db.tasks.add({ ...taskBase, personId: firstPerson.id, sortOrder: maxOrder })
-    } else if (newTask.forBoth) {
-      await Promise.all(
-        personStates.map(async (ps, i) => {
-          const maxOrder = await getMaxSortOrder(ps.person.id)
-          await db.tasks.add({ ...taskBase, personId: ps.person.id, sortOrder: maxOrder })
-        })
-      )
+    if (editingId) {
+      await updateTask(editingId, {
+        name: form.name.trim(),
+        points: form.points,
+        icon: form.icon,
+        recurrenceDays: form.recurrenceDays,
+        scheduledDate: form.scheduledDate || null,
+      })
     } else {
-      if (!activePerson) { setLoading(false); return }
-      const maxOrder = await getMaxSortOrder(activePerson.id)
-      await db.tasks.add({ ...taskBase, personId: activePerson.id, sortOrder: maxOrder })
+      const base = {
+        name: form.name.trim(),
+        points: form.points,
+        icon: form.icon,
+        isActive: 1,
+        recurrenceDays: form.recurrenceDays,
+        scheduledDate: form.scheduledDate || null,
+        isGlobal: form.isGlobal ? 1 : 0,
+        globalWinnerId: null,
+      }
+
+      if (form.isGlobal) {
+        const firstPerson = personStates[0]?.person
+        if (firstPerson) {
+          const maxOrder = await getMaxSortOrder(firstPerson.id)
+          await addTask({ ...base, personId: firstPerson.id, sortOrder: maxOrder })
+        }
+      } else if (form.forBoth) {
+        await Promise.all(
+          personStates.map(async (ps) => {
+            const maxOrder = await getMaxSortOrder(ps.person.id)
+            await addTask({ ...base, personId: ps.person.id, sortOrder: maxOrder })
+          })
+        )
+      } else if (activePerson) {
+        const maxOrder = await getMaxSortOrder(activePerson.id)
+        await addTask({ ...base, personId: activePerson.id, sortOrder: maxOrder })
+      }
     }
 
-    setNewTask({ name: '', points: 20, icon: '⭐', forBoth: false, scheduledDate: '', isGlobal: false })
     await loadTasks()
-    if (newTask.isGlobal) {
+    if (form.isGlobal || form.forBoth) {
       await reloadPersonData()
-    } else if (newTask.forBoth) {
-      await Promise.all(personStates.map(ps => reloadPersonTasks(ps.person.id)))
-    } else {
+    } else if (activePerson) {
       await reloadPersonTasks(activePerson.id)
     }
+    closeForm()
     setLoading(false)
   }
 
@@ -130,34 +194,37 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
   }
 
   async function deleteTask(taskId) {
-    await db.tasks.update(taskId, { isActive: 0 })
+    await updateTask(taskId, { isActive: 0 })
     await loadTasks()
     if (activePerson) await reloadPersonTasks(activePerson.id)
   }
 
-  async function moveTask(taskId, direction) {
-    const idx = tasks.findIndex(t => t.id === taskId)
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= tasks.length) return
-
-    const a = tasks[idx]
-    const b = tasks[swapIdx]
-    const aOrder = a.sortOrder
-    const bOrder = b.sortOrder
-
-    await db.tasks.update(a.id, { sortOrder: bOrder })
-    await db.tasks.update(b.id, { sortOrder: aOrder })
-    await loadTasks()
-    if (activePerson) await reloadPersonTasks(activePerson.id)
+  function toggleDay(dayNum) {
+    setForm(f => ({
+      ...f,
+      recurrenceDays: f.recurrenceDays.includes(dayNum)
+        ? f.recurrenceDays.filter(d => d !== dayNum)
+        : [...f.recurrenceDays, dayNum].sort((a, b) => a - b),
+    }))
   }
 
-  function handleKeyDown(e) {
-    if (e.key === 'Enter') addTask()
+  function getRecurrenceLabel(task) {
+    if (task.scheduledDate) {
+      const d = new Date(task.scheduledDate + 'T00:00:00')
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+    }
+    if (!task.recurrenceDays || task.recurrenceDays.length === 0) return 'Todos os dias'
+    if (task.recurrenceDays.length === 7) return 'Todos os dias'
+    if (task.recurrenceDays.length === 5 && task.recurrenceDays.every(d => d <= 5)) return 'Dias úteis'
+    if (task.recurrenceDays.length === 2 && task.recurrenceDays.includes(6) && task.recurrenceDays.includes(7)) return 'Fim de semana'
+    return task.recurrenceDays
+      .map(d => WEEKDAYS.find(w => w.num === d)?.label.slice(0, 3))
+      .join(', ')
   }
 
   const filteredEmojis = emojiSearch.trim()
-    ? ALL_EMOJIS.filter(e => e.includes(emojiSearch))
-    : EMOJI_CATEGORIES[activeEmojiCategory]?.items || []
+    ? ALL_EMOJIS
+    : EMOJI_CATEGORIES[emojiCatIdx]?.items || []
 
   if (!open) return null
 
@@ -167,36 +234,60 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end tablet:items-center justify-center bg-black/60 backdrop-blur-sm px-0 tablet:px-4"
+        className="fixed inset-0 z-50 flex items-end tablet:items-center justify-center bg-black/70 backdrop-blur-md px-0 tablet:px-4"
         onClick={e => e.target === e.currentTarget && onClose()}
       >
         <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
+          initial={{ y: 60, opacity: 0, scale: 0.98 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-          className="bg-surface w-full tablet:max-w-xl rounded-t-[24px] tablet:rounded-card border border-border flex flex-col"
+          className="bg-[#151826] w-full tablet:max-w-2xl rounded-t-[28px] tablet:rounded-[24px] border border-white/5 flex flex-col shadow-2xl"
           style={{ maxHeight: '92vh' }}
         >
-          <div className="flex items-center justify-between p-5 border-b border-border flex-shrink-0">
-            <h2 className="font-extrabold text-lg text-textprimary">Gerenciar Tarefas</h2>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-elevated transition-colors cursor-pointer">
-              <X size={20} className="text-textsecondary" />
-            </button>
+          <div className="flex items-center justify-between p-5 border-b border-white/5 flex-shrink-0">
+            <div>
+              <h2 className="font-extrabold text-lg text-white">Gerenciar Tarefas</h2>
+              <p className="text-xs text-white/50 mt-0.5">{tasks.length} {tasks.length === 1 ? 'tarefa' : 'tarefas'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openNew}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-white transition-all cursor-pointer hover:opacity-90"
+                style={{ background: `linear-gradient(135deg, ${COLORS[0]}, ${COLORS[1]})` }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 3V13M3 8H13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Nova Tarefa
+              </button>
+              <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 transition-colors cursor-pointer">
+                <X size={18} className="text-white/60" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex p-4 gap-2 flex-shrink-0 border-b border-border">
+          <div className="flex p-4 gap-2 flex-shrink-0 border-b border-white/5">
             {personStates.map((ps, i) => (
               <button
                 key={ps.person.id}
                 onClick={() => setActivePersonIdx(i)}
-                className="flex-1 py-2 rounded-md2 text-sm font-bold transition-all duration-200 cursor-pointer"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-bold transition-all duration-200 cursor-pointer"
                 style={{
-                  background: activePersonIdx === i ? COLORS[i] : 'transparent',
+                  background: activePersonIdx === i ? COLORS[i] : 'rgba(255,255,255,0.04)',
                   color: activePersonIdx === i ? '#fff' : '#8A8FA8',
-                  border: `1px solid ${activePersonIdx === i ? COLORS[i] : '#2A2E42'}`,
+                  boxShadow: activePersonIdx === i ? `0 4px 16px ${COLORS[i]}50` : 'none',
                 }}
               >
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold"
+                  style={{
+                    background: activePersonIdx === i ? 'rgba(255,255,255,0.25)' : COLORS[i] + '40',
+                    color: activePersonIdx === i ? '#fff' : COLORS[i],
+                  }}
+                >
+                  {ps.person.name[0]?.toUpperCase()}
+                </span>
                 {ps.person.name}
               </button>
             ))}
@@ -204,214 +295,356 @@ export default function ManageTasksModal({ open, onClose, initialPersonId }) {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
             {tasks.length === 0 && (
-              <div className="text-center py-8 text-textsecondary text-sm">Nenhuma tarefa. Adicione abaixo.</div>
-            )}
-            {tasks.map((task, idx) => (
-              <div
-                key={task.id}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-md2 bg-elevated border border-border"
-              >
-                <div className="flex flex-col gap-0.5 flex-shrink-0">
-                  <button
-                    onClick={() => moveTask(task.id, 'up')}
-                    disabled={idx === 0}
-                    className="p-0.5 rounded hover:bg-border transition-colors cursor-pointer disabled:opacity-30"
-                  >
-                    <ChevronUp size={14} className="text-textsecondary" />
-                  </button>
-                  <button
-                    onClick={() => moveTask(task.id, 'down')}
-                    disabled={idx === tasks.length - 1}
-                    className="p-0.5 rounded hover:bg-border transition-colors cursor-pointer disabled:opacity-30"
-                  >
-                    <ChevronDown size={14} className="text-textsecondary" />
-                  </button>
-                </div>
-                <span className="text-lg flex-shrink-0">{task.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-textprimary truncate">{task.name}</span>
-                    {task.isGlobal === 1 && (
-                      <Trophy size={12} className="text-yellow-400 flex-shrink-0" />
-                    )}
-                  </div>
-                  {task.scheduledDate && (
-                    <span className="text-xs text-textsecondary flex items-center gap-1 mt-0.5">
-                      <Calendar size={10} />
-                      {new Date(task.scheduledDate + 'T00:00:00').toLocaleDateString('pt-BR')}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                  style={{ color: colorHex, background: colorHex + '20' }}
-                >
-                  +{task.points}
-                </span>
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  className="p-1.5 rounded-md hover:bg-red-500/20 transition-colors cursor-pointer flex-shrink-0"
-                >
-                  <Trash2 size={15} className="text-red-400" />
-                </button>
+              <div className="text-center py-12 text-white/40 text-sm">
+                <div className="text-4xl mb-3 opacity-50">📋</div>
+                <p>Nenhuma tarefa ainda.</p>
+                <p className="text-xs mt-1">Toque em "Nova Tarefa" para começar.</p>
               </div>
+            )}
+            {tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                colorHex={colorHex}
+                recurrenceLabel={getRecurrenceLabel(task)}
+                onEdit={() => openEdit(task)}
+                onDelete={() => deleteTask(task.id)}
+              />
             ))}
           </div>
 
-          <div className="p-4 border-t border-border flex-shrink-0 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-textdisabled">Nova tarefa</p>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowEmojiPicker(p => !p)}
-                className="text-2xl px-3 py-2 bg-elevated rounded-md2 border border-border cursor-pointer hover:border-p1 transition-colors flex-shrink-0"
-              >
-                {newTask.icon}
-              </button>
-              <input
-                type="text"
-                value={newTask.name}
-                onChange={e => setNewTask(p => ({ ...p, name: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                placeholder="Nome da tarefa"
-                className="flex-1 bg-elevated border border-border rounded-md2 px-3 py-2 text-sm text-textprimary outline-none focus:border-p1 transition-colors placeholder:text-textdisabled"
+          <AnimatePresence>
+            {showNew && (
+              <NewTaskSheet
+                form={form}
+                setForm={setForm}
+                editingId={editingId}
+                personStates={personStates}
+                activePersonIdx={activePersonIdx}
+                emojiSearch={emojiSearch}
+                setEmojiSearch={setEmojiSearch}
+                emojiCatIdx={emojiCatIdx}
+                setEmojiCatIdx={setEmojiCatIdx}
+                filteredEmojis={filteredEmojis}
+                toggleDay={toggleDay}
+                onSave={saveTask}
+                onCancel={closeForm}
+                loading={loading}
+                colorHex={colorHex}
               />
-            </div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
 
-            {showEmojiPicker && (
-              <div className="bg-elevated rounded-card p-3 border border-border space-y-2">
+function TaskRow({ task, colorHex, recurrenceLabel, onEdit, onDelete }) {
+  const isGlobal = task.isGlobal === 1
+  const iconBg = isGlobal ? '#FFD70015' : colorHex + '15'
+  const iconBorder = isGlobal ? '#FFD70040' : colorHex + '35'
+
+  return (
+    <div className="group flex items-center gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-xl border"
+        style={{ background: iconBg, borderColor: iconBorder }}
+      >
+        {task.icon || '⭐'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-white truncate">{task.name}</p>
+          {isGlobal && <Trophy size={11} className="text-yellow-400 flex-shrink-0" />}
+        </div>
+        <p className="text-xs text-white/40 mt-0.5">{recurrenceLabel}</p>
+      </div>
+      <span
+        className="text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0"
+        style={{ color: isGlobal ? '#FFD700' : colorHex, background: isGlobal ? '#FFD70015' : colorHex + '15' }}
+      >
+        +{task.points} pts
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onEdit}
+          className="p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
+        >
+          <Pencil size={14} className="text-white/50" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-2 rounded-lg hover:bg-red-500/10 transition-colors cursor-pointer"
+        >
+          <Trash2 size={14} className="text-red-400/70" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function NewTaskSheet({
+  form, setForm, editingId, personStates, activePersonIdx,
+  emojiSearch, setEmojiSearch, emojiCatIdx, setEmojiCatIdx, filteredEmojis,
+  toggleDay, onSave, onCancel, loading, colorHex,
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="absolute inset-0 z-10 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={e => e.target === e.currentTarget && onCancel()}
+    >
+      <motion.div
+        initial={{ y: 20, opacity: 0, scale: 0.97 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 20, opacity: 0, scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="w-full max-w-md bg-[#1A1D2E] rounded-3xl border border-white/10 shadow-2xl flex flex-col"
+        style={{ maxHeight: '85vh' }}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/5 flex-shrink-0">
+          <h3 className="font-extrabold text-base text-white">{editingId ? 'Editar Tarefa' : 'Nova Tarefa'}</h3>
+          <button onClick={onCancel} className="p-1.5 rounded-full hover:bg-white/5 cursor-pointer">
+            <X size={16} className="text-white/50" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-5">
+          {!editingId && (
+            <div className="flex gap-2">
+              {personStates.map((ps, i) => (
+                <button
+                  key={ps.person.id}
+                  onClick={() => setForm(f => ({ ...f, forBoth: false, isGlobal: false }))}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-xs font-bold transition-all cursor-pointer"
+                  style={{
+                    background: (!form.forBoth && !form.isGlobal && activePersonIdx === i) ? COLORS[i] : 'rgba(255,255,255,0.04)',
+                    color: (!form.forBoth && !form.isGlobal && activePersonIdx === i) ? '#fff' : '#8A8FA8',
+                    opacity: (!form.forBoth && !form.isGlobal && activePersonIdx !== i) ? 0.4 : 1,
+                  }}
+                >
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                    style={{
+                      background: (!form.forBoth && !form.isGlobal && activePersonIdx === i) ? 'rgba(255,255,255,0.25)' : COLORS[i] + '40',
+                      color: (!form.forBoth && !form.isGlobal && activePersonIdx === i) ? '#fff' : COLORS[i],
+                    }}
+                  >
+                    {ps.person.name[0]?.toUpperCase()}
+                  </span>
+                  {ps.person.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Nome</label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Ex: Beber 2L de água"
+              className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-3.5 py-3 text-sm text-white outline-none focus:border-white/25 transition-colors placeholder:text-white/25"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">
+              Pontos · <span style={{ color: colorHex }} className="font-bold">{form.points}</span>
+            </label>
+            <input
+              type="range" min={5} max={100} step={5}
+              value={form.points}
+              onChange={e => setForm(f => ({ ...f, points: Number(e.target.value) }))}
+              className="w-full h-1.5"
+              style={{ accentColor: colorHex }}
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Ícone</label>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 space-y-3">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
                   value={emojiSearch}
                   onChange={e => setEmojiSearch(e.target.value)}
-                  placeholder="Buscar emoji..."
-                  className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-xs text-textprimary outline-none focus:border-p1 placeholder:text-textdisabled"
+                  placeholder="Buscar ícone..."
+                  className="w-full bg-black/20 border border-white/5 rounded-lg pl-9 pr-2 py-2 text-xs text-white outline-none focus:border-white/20 placeholder:text-white/25"
                 />
-                {!emojiSearch && (
-                  <div className="flex gap-1 flex-wrap">
-                    {EMOJI_CATEGORIES.map((cat, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActiveEmojiCategory(i)}
-                        className="text-xs px-2 py-1 rounded-md transition-colors cursor-pointer"
-                        style={{
-                          background: activeEmojiCategory === i ? colorHex + '30' : 'transparent',
-                          color: activeEmojiCategory === i ? colorHex : '#8A8FA8',
-                          border: `1px solid ${activeEmojiCategory === i ? colorHex + '60' : '#2A2E42'}`,
-                        }}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="grid grid-cols-10 gap-1 max-h-32 overflow-y-auto">
-                  {filteredEmojis.map(e => (
+              </div>
+              {!emojiSearch && (
+                <div className="flex gap-1 flex-wrap">
+                  {EMOJI_CATEGORIES.map((cat, i) => (
                     <button
-                      key={e}
-                      onClick={() => { setNewTask(p => ({ ...p, icon: e })); setShowEmojiPicker(false); setEmojiSearch('') }}
-                      className="text-xl p-1 rounded-md hover:bg-border transition-colors cursor-pointer"
+                      key={cat.label}
+                      onClick={() => setEmojiCatIdx(i)}
+                      className="text-[10px] px-2.5 py-1 rounded-full transition-colors cursor-pointer font-bold"
+                      style={{
+                        background: emojiCatIdx === i ? colorHex + '25' : 'rgba(255,255,255,0.03)',
+                        color: emojiCatIdx === i ? colorHex : '#8A8FA8',
+                        border: `1px solid ${emojiCatIdx === i ? colorHex + '50' : 'rgba(255,255,255,0.05)'}`,
+                      }}
                     >
-                      {e}
+                      {cat.label}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            <div>
-              <div className="flex justify-between text-xs text-textsecondary mb-1">
-                <span>Pontos por conclusão</span>
-                <span className="font-bold" style={{ color: colorHex }}>{newTask.points} pts</span>
-              </div>
-              <input
-                type="range" min={5} max={100} step={5}
-                value={newTask.points}
-                onChange={e => setNewTask(p => ({ ...p, points: Number(e.target.value) }))}
-                className="w-full h-1.5"
-                style={{ accentColor: colorHex }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-2.5 rounded-md2 bg-elevated border border-border">
-                <Calendar size={14} className="text-textsecondary flex-shrink-0" />
-                <span className="text-xs text-textsecondary flex-1">Aparecer em data específica</span>
-                <input
-                  type="date"
-                  value={newTask.scheduledDate}
-                  onChange={e => setNewTask(p => ({ ...p, scheduledDate: e.target.value }))}
-                  className="bg-transparent text-xs text-textprimary outline-none cursor-pointer"
-                  min={new Date().toISOString().slice(0, 10)}
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <label
-                  onClick={() => setNewTask(p => ({ ...p, forBoth: !p.forBoth, isGlobal: false }))}
-                  className="flex items-center gap-2 flex-1 p-2.5 rounded-md2 border cursor-pointer transition-all"
-                  style={{
-                    background: newTask.forBoth && !newTask.isGlobal ? '#6C63FF15' : 'transparent',
-                    borderColor: newTask.forBoth && !newTask.isGlobal ? '#6C63FF60' : '#2A2E42',
-                  }}
-                >
-                  <div
-                    className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
+              )}
+              <div className="grid grid-cols-8 gap-1 max-h-[112px] overflow-y-auto">
+                {filteredEmojis.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => setForm(f => ({ ...f, icon: emoji }))}
+                    className="aspect-square flex items-center justify-center text-xl rounded-lg transition-all cursor-pointer"
                     style={{
-                      background: newTask.forBoth && !newTask.isGlobal ? '#6C63FF' : 'transparent',
-                      border: `2px solid ${newTask.forBoth && !newTask.isGlobal ? '#6C63FF' : '#4A4F68'}`,
+                      background: form.icon === emoji ? colorHex + '25' : 'transparent',
+                      border: `1px solid ${form.icon === emoji ? colorHex + '60' : 'transparent'}`,
                     }}
                   >
-                    {newTask.forBoth && !newTask.isGlobal && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-xs text-textsecondary">Adicionar para as duas pessoas</span>
-                </label>
-
-                <label
-                  onClick={() => setNewTask(p => ({ ...p, isGlobal: !p.isGlobal, forBoth: false }))}
-                  className="flex items-center gap-2 flex-1 p-2.5 rounded-md2 border cursor-pointer transition-all"
-                  style={{
-                    background: newTask.isGlobal ? '#FFD70015' : 'transparent',
-                    borderColor: newTask.isGlobal ? '#FFD70060' : '#2A2E42',
-                  }}
-                >
-                  <div
-                    className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-all"
-                    style={{
-                      background: newTask.isGlobal ? '#FFD700' : 'transparent',
-                      border: `2px solid ${newTask.isGlobal ? '#FFD700' : '#4A4F68'}`,
-                    }}
-                  >
-                    {newTask.isGlobal && (
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
-                  <Trophy size={11} className="text-yellow-400 flex-shrink-0" />
-                  <span className="text-xs text-textsecondary">Desafio — quem fizer primeiro ganha</span>
-                </label>
+                    {emoji}
+                  </button>
+                ))}
               </div>
             </div>
-
-            <button
-              onClick={addTask}
-              disabled={!newTask.name.trim() || loading}
-              className="w-full py-3 rounded-card font-bold text-sm text-white flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-              style={{ background: colorHex }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 3V13M3 8H13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Adicionar tarefa
-            </button>
           </div>
-        </motion.div>
+
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Repetição</label>
+            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 space-y-3">
+              <p className="text-xs text-white/50">
+                {form.recurrenceDays.length === 0 || form.recurrenceDays.length === 7
+                  ? 'Todos os dias'
+                  : form.recurrenceDays.length === 5 && form.recurrenceDays.every(d => d <= 5)
+                    ? 'Dias úteis'
+                    : `${form.recurrenceDays.length} ${form.recurrenceDays.length === 1 ? 'dia' : 'dias'}`}
+              </p>
+              <div className="flex gap-1.5 justify-between">
+                {WEEKDAYS.map(day => {
+                  const active = form.recurrenceDays.includes(day.num)
+                  return (
+                    <button
+                      key={day.num}
+                      onClick={() => toggleDay(day.num)}
+                      className="flex-1 aspect-square rounded-xl text-sm font-bold transition-all cursor-pointer"
+                      style={{
+                        background: active ? colorHex : 'rgba(255,255,255,0.03)',
+                        color: active ? '#fff' : '#8A8FA8',
+                        border: `1px solid ${active ? colorHex : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: active ? `0 4px 12px ${colorHex}40` : 'none',
+                      }}
+                      aria-label={day.label}
+                    >
+                      {day.short}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Data específica (opcional)</label>
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/10">
+              <Calendar size={14} className="text-white/40" />
+              <input
+                type="date"
+                value={form.scheduledDate}
+                onChange={e => setForm(f => ({ ...f, scheduledDate: e.target.value }))}
+                className="flex-1 bg-transparent text-xs text-white outline-none cursor-pointer"
+                min={new Date().toISOString().slice(0, 10)}
+              />
+              {form.scheduledDate && (
+                <button
+                  onClick={() => setForm(f => ({ ...f, scheduledDate: '' }))}
+                  className="text-xs text-white/50 cursor-pointer hover:text-white"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+            {form.scheduledDate && (
+              <p className="text-[10px] text-white/40 mt-1.5">Aparece apenas neste dia específico.</p>
+            )}
+          </div>
+
+          {!editingId && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setForm(f => ({ ...f, forBoth: !f.forBoth, isGlobal: false }))}
+                className="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
+                style={{
+                  background: form.forBoth ? '#6C63FF15' : 'rgba(255,255,255,0.02)',
+                  borderColor: form.forBoth ? '#6C63FF60' : 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <div
+                  className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: form.forBoth ? '#6C63FF' : 'transparent',
+                    border: `2px solid ${form.forBoth ? '#6C63FF' : '#4A4F68'}`,
+                  }}
+                >
+                  {form.forBoth && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-[11px] text-white/70 leading-tight text-left">Para as duas pessoas</span>
+              </button>
+
+              <button
+                onClick={() => setForm(f => ({ ...f, isGlobal: !f.isGlobal, forBoth: false }))}
+                className="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all"
+                style={{
+                  background: form.isGlobal ? '#FFD70015' : 'rgba(255,255,255,0.02)',
+                  borderColor: form.isGlobal ? '#FFD70060' : 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <div
+                  className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                  style={{
+                    background: form.isGlobal ? '#FFD700' : 'transparent',
+                    border: `2px solid ${form.isGlobal ? '#FFD700' : '#4A4F68'}`,
+                  }}
+                >
+                  {form.isGlobal && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#222" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <Trophy size={11} className="text-yellow-400 flex-shrink-0" />
+                <span className="text-[11px] text-white/70 leading-tight text-left">Desafio (quem fizer 1º ganha)</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 p-4 border-t border-white/5 flex-shrink-0">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-xl font-bold text-sm text-white/60 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onSave}
+            disabled={!form.name.trim() || loading}
+            className="flex-1 py-3 rounded-xl font-bold text-sm text-white transition-all cursor-pointer disabled:opacity-40"
+            style={{ background: `linear-gradient(135deg, ${colorHex}, ${colorHex}dd)`, boxShadow: `0 6px 20px ${colorHex}40` }}
+          >
+            {loading ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
+          </button>
+        </div>
       </motion.div>
-    </AnimatePresence>
+    </motion.div>
   )
 }

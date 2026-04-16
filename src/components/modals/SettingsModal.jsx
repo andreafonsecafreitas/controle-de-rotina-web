@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download, Upload, AlertTriangle } from 'lucide-react'
-import { db, exportAllData, importAllData } from '../../db/database'
+import { X, Download, Upload } from 'lucide-react'
+import { updatePerson, exportAllData, importAllData } from '../../db/database'
 import { useShallow } from 'zustand/react/shallow'
 import useAppStore from '../../stores/useAppStore'
 
@@ -33,7 +33,7 @@ export default function SettingsModal({ open, onClose }) {
     setSaving(true)
     for (const f of fields) {
       if (!f.name.trim()) continue
-      await db.persons.update(f.id, { name: f.name.trim(), metaPoints: f.metaPoints })
+      await updatePerson(f.id, { name: f.name.trim(), metaPoints: f.metaPoints })
     }
     await loadAll()
     setSaving(false)
@@ -100,16 +100,6 @@ export default function SettingsModal({ open, onClose }) {
             <button onClick={onClose} className="p-2 rounded-full hover:bg-elevated transition-colors cursor-pointer">
               <X size={20} className="text-textsecondary" />
             </button>
-          </div>
-
-          <div className="p-4 mx-5 mt-5 rounded-card border border-yellow-500/30 bg-yellow-500/8 flex gap-3">
-            <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-bold text-yellow-400 mb-1">Dados salvos apenas neste navegador</p>
-              <p className="text-xs text-textsecondary leading-relaxed">
-                Os dados ficam armazenados localmente aqui neste dispositivo e perfil do navegador. Para não perder tudo, <strong className="text-yellow-300">exporte o backup regularmente</strong> e importe quando trocar de navegador ou dispositivo.
-              </p>
-            </div>
           </div>
 
           <div className="p-5 space-y-5">

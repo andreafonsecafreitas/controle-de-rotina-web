@@ -19,8 +19,8 @@ export default function TodayTab({ onManageTasks }) {
           {personStates.map((ps, i) => (
             <div
               key={ps.person.id}
-              className="bg-surface rounded-card p-4 border"
-              style={{ borderColor: COLORS[i] + '33' }}
+              className="bg-white/[0.02] backdrop-blur-sm rounded-3xl p-5 border"
+              style={{ borderColor: COLORS[i] + '26' }}
             >
               <PersonColumn
                 personState={ps}
@@ -34,25 +34,35 @@ export default function TodayTab({ onManageTasks }) {
 
       <div className="tablet:hidden flex flex-col h-full">
         <GlobalChallengesSection />
-        <div className="flex mb-4 bg-surface rounded-card p-1 gap-1">
+        <div className="flex mb-4 bg-white/[0.03] rounded-full p-1 gap-0.5 border border-white/5">
           {personStates.map((ps, i) => (
             <button
               key={ps.person.id}
               onClick={() => setActivePerson(i)}
-              className="flex-1 py-2.5 rounded-md2 text-sm font-bold transition-all duration-200 cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-bold transition-all duration-200 cursor-pointer"
               style={{
                 background: activePerson === i ? COLORS[i] : 'transparent',
-                color: activePerson === i ? '#fff' : '#8A8FA8',
+                color: activePerson === i ? '#fff' : 'rgba(255,255,255,0.4)',
+                boxShadow: activePerson === i ? `0 4px 16px ${COLORS[i]}50` : 'none',
               }}
             >
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                style={{
+                  background: activePerson === i ? 'rgba(255,255,255,0.25)' : COLORS[i] + '35',
+                  color: activePerson === i ? '#fff' : COLORS[i],
+                }}
+              >
+                {ps.person.name[0]?.toUpperCase()}
+              </span>
               {ps.person.name}
             </button>
           ))}
         </div>
 
         <div
-          className="flex-1 bg-surface rounded-card p-4 border overflow-hidden"
-          style={{ borderColor: COLORS[activePerson] + '33' }}
+          className="flex-1 bg-white/[0.02] rounded-3xl p-5 border overflow-hidden"
+          style={{ borderColor: COLORS[activePerson] + '26' }}
         >
           <PersonColumn
             personState={personStates[activePerson]}
