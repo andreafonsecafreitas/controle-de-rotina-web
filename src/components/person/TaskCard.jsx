@@ -1,12 +1,29 @@
 import { memo, useCallback } from 'react'
-import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { GripVertical, Check } from 'lucide-react'
 import useAppStore from '../../stores/useAppStore'
+
+const GRADIENTS = {
+  '#6C63FF': {
+    card: 'linear-gradient(135deg, rgba(108,99,255,0.12) 0%, rgba(108,99,255,0.04) 100%)',
+    cardDone: 'linear-gradient(135deg, rgba(108,99,255,0.06) 0%, rgba(108,99,255,0.02) 100%)',
+    badge: 'linear-gradient(135deg, #6C63FF, #8B85FF)',
+    glow: '0 4px 20px rgba(108,99,255,0.25)',
+    checkBg: 'linear-gradient(135deg, #6C63FF, #9B8CFF)',
+  },
+  '#FF6584': {
+    card: 'linear-gradient(135deg, rgba(255,101,132,0.12) 0%, rgba(255,101,132,0.04) 100%)',
+    cardDone: 'linear-gradient(135deg, rgba(255,101,132,0.06) 0%, rgba(255,101,132,0.02) 100%)',
+    badge: 'linear-gradient(135deg, #FF6584, #FF85A0)',
+    glow: '0 4px 20px rgba(255,101,132,0.25)',
+    checkBg: 'linear-gradient(135deg, #FF6584, #FF9BAD)',
+  },
+}
 
 function TaskCard({ task, personId, colorHex, subtitle }) {
   const toggleTask = useAppStore(s => s.toggleTask)
+  const gradient = GRADIENTS[colorHex] || GRADIENTS['#6C63FF']
 
   const {
     attributes,
@@ -21,6 +38,7 @@ function TaskCard({ task, personId, colorHex, subtitle }) {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.7 : 1,
   }
 
   const handleToggle = useCallback((e) => {
@@ -29,57 +47,44 @@ function TaskCard({ task, personId, colorHex, subtitle }) {
   }, [task.id, task.isDone, personId, toggleTask])
 
   return (
-    <motion.div
-      ref={setNodeRef}
-      style={style}
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.15 }}
-      className="group"
-    >
+    <div ref={setNodeRef} style={style} {...attributes}>
       <div
         onClick={handleToggle}
-        className="flex items-center gap-2.5 p-3.5 rounded-2xl cursor-pointer transition-all duration-150 select-none hover:bg-white/[0.04] border border-white/5 hover:border-white/10"
+        className="flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-200"
         style={{
-          background: task.isDone ? colorHex + '08' : 'transparent',
+          background: task.isDone ? gradient.cardDone : gradient.card,
+          border: `1px solid ${task.isDone ? colorHex + '15' : colorHex + '25'}`,
+          boxShadow: isDragging ? gradient.glow : 'none',
         }}
       >
         <button
           data-drag-handle
           {...listeners}
           onClick={e => e.stopPropagation()}
-          className="p-1.5 -ml-1 text-white/20 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 transition-colors"
+          className="p-1 -ml-1 text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 transition-colors duration-150"
           aria-label="Arrastar"
         >
           <GripVertical size={14} strokeWidth={2.5} />
         </button>
 
         <div
-          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center font-bold flex-center transition-all duration-200 border-2"
+          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center transition-all duration-300"
           style={{
-            background: task.isDone ? colorHex : 'transparent',
-            borderColor: task.isDone ? colorHex : colorHex + '50',
-            color: task.isDone ? '#fff' : colorHex,
+            background: task.isDone ? gradient.checkBg : 'transparent',
+            border: task.isDone ? 'none' : `2px solid ${colorHex}40`,
+            boxShadow: task.isDone ? `0 2px 10px ${colorHex}40` : 'none',
           }}
         >
-          {task.isDone ? (
-            <motion.svg
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              width="14" height="14" viewBox="0 0 14 14" fill="none"
-            >
-              <path d="M3 7L6 10L11 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </motion.svg>
-          ) : null}
+          {task.isDone && (
+            <Check size={14} strokeWidth={3} color="#fff" />
+          )}
         </div>
 
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg border"
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
           style={{
-            background: colorHex + '12',
-            borderColor: colorHex + '30',
+            background: `linear-gradient(135deg, ${colorHex}18, ${colorHex}08)`,
+            border: `1px solid ${colorHex}20`,
           }}
         >
           {task.icon || '⭐'}
@@ -87,32 +92,31 @@ function TaskCard({ task, personId, colorHex, subtitle }) {
 
         <div className="flex-1 min-w-0">
           <p
-            className="text-sm font-medium leading-snug truncate transition-all duration-150"
+            className="text-sm font-semibold leading-snug truncate transition-all duration-200"
             style={{
-              color: task.isDone ? 'rgba(255,255,255,0.45)' : '#EAEAEA',
+              color: task.isDone ? 'rgba(255,255,255,0.35)' : '#EAEAEA',
               textDecoration: task.isDone ? 'line-through' : 'none',
             }}
           >
             {task.name}
           </p>
           {subtitle && (
-            <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitle}</p>
+            <p className="text-[10px] text-white/30 mt-0.5 truncate">{subtitle}</p>
           )}
         </div>
 
-        <motion.span
-          whileHover={{ scale: 1.05 }}
-          className="text-xs font-bold flex-shrink-0 px-2.5 py-1.5 rounded-lg transition-all duration-150"
+        <span
+          className="text-xs font-extrabold flex-shrink-0 px-2.5 py-1.5 rounded-xl transition-all duration-200"
           style={{
-            color: colorHex,
-            background: colorHex + '18',
-            border: `1px solid ${colorHex}30`,
+            background: task.isDone ? `${colorHex}10` : gradient.badge,
+            color: task.isDone ? `${colorHex}80` : '#fff',
+            boxShadow: task.isDone ? 'none' : `0 2px 8px ${colorHex}30`,
           }}
         >
           +{task.points}
-        </motion.span>
+        </span>
       </div>
-    </motion.div>
+    </div>
   )
 }
 

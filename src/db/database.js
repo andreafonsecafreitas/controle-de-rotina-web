@@ -299,6 +299,27 @@ export async function upsertDailySummary(personId, dateStr, pointsEarned, metaSn
   }, { onConflict: 'person_id,date' })
 }
 
+export async function batchLoadAll(today) {
+  const [
+    { data: persons },
+    { data: allTasks },
+    { data: allCompletions },
+    { data: allSummaries },
+  ] = await Promise.all([
+    supabase.from('persons').select('*').order('id', { ascending: true }),
+    supabase.from('tasks').select('*').eq('is_active', 1).order('sort_order', { ascending: true }),
+    supabase.from('task_completions').select('*'),
+    supabase.from('daily_summary').select('*'),
+  ])
+
+  return {
+    persons: (persons || []).map(personFromDb),
+    tasks: (allTasks || []).map(taskFromDb),
+    completions: (allCompletions || []).map(completionFromDb),
+    summaries: (allSummaries || []).map(summaryFromDb),
+  }
+}
+
 export async function exportAllData() {
   const [
     { data: persons },

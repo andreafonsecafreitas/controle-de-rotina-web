@@ -1,16 +1,17 @@
-import { motion } from 'framer-motion'
+import { memo } from 'react'
 
-export default function ProgressBar({ value, max, color = '#6C63FF', height = 8, animated = true }) {
+function ProgressBar({ value, max, color = '#6C63FF', height = 8 }) {
   const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0)
 
   return (
     <div className="w-full rounded-full overflow-hidden bg-elevated" style={{ height }}>
-      <motion.div
-        initial={animated ? { width: 0 } : false}
-        animate={{ width: `${pct}%` }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-        className="h-full rounded-full relative"
-        style={{ background: `linear-gradient(90deg, ${color}, ${color}cc)`, minWidth: pct > 0 ? 8 : 0 }}
+      <div
+        className="h-full rounded-full relative transition-all duration-700 ease-out"
+        style={{
+          width: `${pct}%`,
+          background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+          minWidth: pct > 0 ? 8 : 0,
+        }}
       >
         {pct >= 100 && (
           <div
@@ -18,7 +19,9 @@ export default function ProgressBar({ value, max, color = '#6C63FF', height = 8,
             style={{ boxShadow: `0 0 8px ${color}88` }}
           />
         )}
-      </motion.div>
+      </div>
     </div>
   )
 }
+
+export default memo(ProgressBar)

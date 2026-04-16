@@ -92,16 +92,17 @@ function PersonColumn({ personState, index, onManageTasks }) {
           >
             {pending.length > 0 && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 mb-2 px-1 flex items-center gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5 px-1 flex items-center gap-2">
                   Pendentes
-                  <span className="text-white/25">·</span>
-                  <span>{pending.length}</span>
+                  <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold" style={{ background: colorHex + '20', color: colorHex }}>
+                    {pending.length}
+                  </span>
                 </p>
                 <SortableContext
                   items={pending.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {pending.map(t => (
                       <TaskCard
                         key={t.id}
@@ -117,16 +118,17 @@ function PersonColumn({ personState, index, onManageTasks }) {
             )}
             {done.length > 0 && (
               <div className={pending.length > 0 ? 'mt-5' : ''}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/35 mb-2 px-1 flex items-center gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5 px-1 flex items-center gap-2">
                   Concluídas
-                  <span className="text-white/25">·</span>
-                  <span>{done.length}</span>
+                  <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold" style={{ background: '#2ECC7120', color: '#2ECC71' }}>
+                    {done.length}
+                  </span>
                 </p>
                 <SortableContext
                   items={done.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {done.map(t => (
                       <TaskCard
                         key={t.id}

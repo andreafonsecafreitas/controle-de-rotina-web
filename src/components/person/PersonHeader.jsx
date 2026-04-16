@@ -1,6 +1,11 @@
 import { memo } from 'react'
 import ProgressBar from '../shared/ProgressBar'
 
+const GRADIENTS = {
+  '#6C63FF': 'linear-gradient(135deg, #6C63FF, #9B8CFF)',
+  '#FF6584': 'linear-gradient(135deg, #FF6584, #FF9BAD)',
+}
+
 function PersonHeader({ personState, colorHex }) {
   const { person, dayScore, streak } = personState
   const pct = Math.round(Math.min(100, (dayScore / person.metaPoints) * 100))
@@ -11,9 +16,9 @@ function PersonHeader({ personState, colorHex }) {
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center text-base font-extrabold flex-shrink-0"
           style={{
-            background: `linear-gradient(135deg, ${colorHex}, ${colorHex}aa)`,
+            background: GRADIENTS[colorHex] || GRADIENTS['#6C63FF'],
             color: '#fff',
-            boxShadow: `0 6px 20px ${colorHex}40`,
+            boxShadow: `0 4px 16px ${colorHex}35`,
           }}
         >
           {person.name[0]?.toUpperCase()}
@@ -28,7 +33,7 @@ function PersonHeader({ personState, colorHex }) {
               <>
                 <span className="text-white/20">·</span>
                 <span className="flex items-center gap-1 text-[11px] font-semibold text-orange-400">
-                  🔥 {streak}d
+                  {streak}d seguidos
                 </span>
               </>
             )}
@@ -36,7 +41,10 @@ function PersonHeader({ personState, colorHex }) {
         </div>
         <div
           className="rounded-xl px-2.5 py-1.5 text-center min-w-[48px]"
-          style={{ background: `${colorHex}18`, border: `1px solid ${colorHex}35` }}
+          style={{
+            background: `linear-gradient(135deg, ${colorHex}18, ${colorHex}08)`,
+            border: `1px solid ${colorHex}30`,
+          }}
         >
           <div className="font-extrabold text-sm leading-none" style={{ color: colorHex }}>{pct}%</div>
           <div className="text-[9px] text-white/40 mt-0.5 uppercase tracking-wider">meta</div>

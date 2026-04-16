@@ -1,34 +1,3 @@
-import { getPersons } from '../db/database'
-import { getTotalScore, getTotalCompletions, getDayScore } from './gamificationService'
-import { calculateStreak } from './streakService'
-import { todayStr } from './dateUtils'
-
-export async function buildRanking() {
-  const persons = await getPersons()
-  const today = todayStr()
-
-  const items = await Promise.all(
-    persons.map(async (p) => {
-      const [totalScore, totalCompletions, streak, dayScore] = await Promise.all([
-        getTotalScore(p.id),
-        getTotalCompletions(p.id),
-        calculateStreak(p.id),
-        getDayScore(p.id, today),
-      ])
-      return { person: p, totalScore, totalCompletions, streak, dayScore }
-    })
-  )
-
-  items.sort((a, b) => {
-    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
-    if (b.streak !== a.streak) return b.streak - a.streak
-    if (b.totalCompletions !== a.totalCompletions) return b.totalCompletions - a.totalCompletions
-    return a.person.name.localeCompare(b.person.name)
-  })
-
-  return items.map((item, idx) => ({ ...item, position: idx + 1 }))
-}
-
 export function getAchievements(item, ranking) {
   const achievements = []
   const leader = ranking[0]
