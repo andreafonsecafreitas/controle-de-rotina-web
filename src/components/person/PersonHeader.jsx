@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import ProgressBar from '../shared/ProgressBar'
 
-export default function PersonHeader({ personState, colorHex }) {
+function PersonHeader({ personState, colorHex }) {
   const { person, dayScore, streak } = personState
   const pct = Math.round(Math.min(100, (dayScore / person.metaPoints) * 100))
 
@@ -52,3 +53,5 @@ export default function PersonHeader({ personState, colorHex }) {
     </div>
   )
 }
+
+export default memo(PersonHeader)

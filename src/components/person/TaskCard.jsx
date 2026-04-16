@@ -1,10 +1,11 @@
+import { memo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 import useAppStore from '../../stores/useAppStore'
 
-export default function TaskCard({ task, personId, colorHex, subtitle }) {
+function TaskCard({ task, personId, colorHex, subtitle }) {
   const toggleTask = useAppStore(s => s.toggleTask)
 
   const {
@@ -20,16 +21,12 @@ export default function TaskCard({ task, personId, colorHex, subtitle }) {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
   }
 
-  function handleToggle(e) {
+  const handleToggle = useCallback((e) => {
     if (e.target.closest('[data-drag-handle]')) return
     toggleTask(task.id, personId, task.isDone)
-  }
-
-  const iconBg = task.isDone ? colorHex + '20' : colorHex + '18'
-  const iconBorder = task.isDone ? colorHex + '55' : colorHex + '30'
+  }, [task.id, task.isDone, personId, toggleTask])
 
   return (
     <motion.div
@@ -37,79 +34,86 @@ export default function TaskCard({ task, personId, colorHex, subtitle }) {
       style={style}
       layout
       initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      onClick={handleToggle}
-      {...attributes}
-      className="flex items-center gap-2.5 p-3 rounded-2xl cursor-pointer transition-all duration-200 select-none"
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.15 }}
+      className="group"
     >
-      <button
-        data-drag-handle
-        {...listeners}
-        onClick={e => e.stopPropagation()}
-        className="p-1 -ml-1 text-white/15 hover:text-white/50 cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
-        aria-label="Arrastar"
-      >
-        <GripVertical size={15} />
-      </button>
-
       <div
-        className="flex-1 flex items-center gap-3 p-3 rounded-2xl transition-colors duration-200"
+        onClick={handleToggle}
+        className="flex items-center gap-2.5 p-3.5 rounded-2xl cursor-pointer transition-all duration-150 select-none hover:bg-white/[0.04] border border-white/5 hover:border-white/10"
         style={{
-          background: task.isDone ? colorHex + '0d' : 'rgba(255,255,255,0.025)',
-          border: `1px solid ${task.isDone ? colorHex + '40' : 'rgba(255,255,255,0.06)'}`,
+          background: task.isDone ? colorHex + '08' : 'transparent',
         }}
       >
+        <button
+          data-drag-handle
+          {...listeners}
+          onClick={e => e.stopPropagation()}
+          className="p-1.5 -ml-1 text-white/20 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 transition-colors"
+          aria-label="Arrastar"
+        >
+          <GripVertical size={14} strokeWidth={2.5} />
+        </button>
+
         <div
-          className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center transition-all duration-200"
+          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center font-bold flex-center transition-all duration-200 border-2"
           style={{
             background: task.isDone ? colorHex : 'transparent',
-            border: `2px solid ${task.isDone ? colorHex : 'rgba(255,255,255,0.18)'}`,
+            borderColor: task.isDone ? colorHex : colorHex + '50',
+            color: task.isDone ? '#fff' : colorHex,
           }}
         >
-          {task.isDone && (
+          {task.isDone ? (
             <motion.svg
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              width="12" height="12" viewBox="0 0 12 12" fill="none"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              width="14" height="14" viewBox="0 0 14 14" fill="none"
             >
-              <path d="M2 6L5 9L10 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 7L6 10L11 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </motion.svg>
-          )}
+          ) : null}
         </div>
 
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl border"
-          style={{ background: iconBg, borderColor: iconBorder }}
+          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-lg border"
+          style={{
+            background: colorHex + '12',
+            borderColor: colorHex + '30',
+          }}
         >
           {task.icon || '⭐'}
         </div>
 
         <div className="flex-1 min-w-0">
           <p
-            className="text-sm font-semibold leading-tight truncate"
+            className="text-sm font-medium leading-snug truncate transition-all duration-150"
             style={{
-              color: task.isDone ? 'rgba(255,255,255,0.5)' : '#EAEAEA',
+              color: task.isDone ? 'rgba(255,255,255,0.45)' : '#EAEAEA',
               textDecoration: task.isDone ? 'line-through' : 'none',
             }}
           >
             {task.name}
           </p>
           {subtitle && (
-            <p className="text-[11px] text-white/40 mt-0.5 truncate">{subtitle}</p>
+            <p className="text-[10px] text-white/35 mt-0.5 truncate">{subtitle}</p>
           )}
         </div>
 
-        <span
-          className="text-xs font-bold flex-shrink-0 px-2.5 py-1 rounded-full"
+        <motion.span
+          whileHover={{ scale: 1.05 }}
+          className="text-xs font-bold flex-shrink-0 px-2.5 py-1.5 rounded-lg transition-all duration-150"
           style={{
             color: colorHex,
-            background: task.isDone ? colorHex + '22' : colorHex + '14',
+            background: colorHex + '18',
+            border: `1px solid ${colorHex}30`,
           }}
         >
           +{task.points}
-        </span>
+        </motion.span>
       </div>
     </motion.div>
   )
 }
+
+export default memo(TaskCard)

@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { Settings, RefreshCw } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import useAppStore from '../stores/useAppStore'
 import TodayTab from '../components/tabs/TodayTab'
 import PeriodTab from '../components/tabs/PeriodTab'
 import RankingTab from '../components/tabs/RankingTab'
-import ManageTasksModal from '../components/modals/ManageTasksModal'
-import SettingsModal from '../components/modals/SettingsModal'
 import { todayStr } from '../services/dateUtils'
+
+const ManageTasksModal = lazy(() => import('../components/modals/ManageTasksModal'))
+const SettingsModal = lazy(() => import('../components/modals/SettingsModal'))
 
 const TABS = [
   { label: 'Hoje' },
@@ -129,15 +130,23 @@ export default function HomePage() {
         )}
       </main>
 
-      <ManageTasksModal
-        open={manageOpen}
-        onClose={() => setManageOpen(false)}
-        initialPersonId={managePersonId}
-      />
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      <Suspense fallback={null}>
+        {manageOpen && (
+          <ManageTasksModal
+            open={manageOpen}
+            onClose={() => setManageOpen(false)}
+            initialPersonId={managePersonId}
+          />
+        )}
+      </Suspense>
+      <Suspense fallback={null}>
+        {settingsOpen && (
+          <SettingsModal
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -36,12 +37,12 @@ function getTaskSubtitle(task) {
   return task.recurrenceDays.map(d => WEEKDAY_LABELS[d]).join(', ')
 }
 
-export default function PersonColumn({ personState, index, onManageTasks }) {
+function PersonColumn({ personState, index, onManageTasks }) {
   const colorHex = COLORS[index]
   const reorderTasks = useAppStore(s => s.reorderTasks)
 
-  const pending = personState.tasks.filter(t => !t.isDone)
-  const done = personState.tasks.filter(t => t.isDone)
+  const pending = useMemo(() => personState.tasks.filter(t => !t.isDone), [personState.tasks])
+  const done = useMemo(() => personState.tasks.filter(t => t.isDone), [personState.tasks])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -49,7 +50,7 @@ export default function PersonColumn({ personState, index, onManageTasks }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  function handleDragEnd(event) {
+  const handleDragEnd = useCallback((event) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
@@ -59,7 +60,7 @@ export default function PersonColumn({ personState, index, onManageTasks }) {
 
     const reordered = arrayMove(personState.tasks, oldIndex, newIndex)
     reorderTasks(personState.person.id, reordered.map(t => t.id))
-  }
+  }, [personState.tasks, personState.person.id, reorderTasks])
 
   return (
     <div className="flex flex-col h-full">
@@ -145,3 +146,5 @@ export default function PersonColumn({ personState, index, onManageTasks }) {
     </div>
   )
 }
+
+export default memo(PersonColumn)
