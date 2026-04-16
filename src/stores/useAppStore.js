@@ -354,6 +354,29 @@ const useAppStore = create((set, get) => ({
       orderedTaskIds.map((id, i) => ({ id, sortOrder: i }))
     )
   },
+
+  deleteTask: async (taskId, personId) => {
+    // 1. Atualização Otimista (UX)
+    set(state => ({
+      personStates: state.personStates.map(ps => {
+        if (ps.person.id !== personId) return ps
+        const tasks = ps.tasks.filter(t => t.id !== taskId)
+        const dayScore = tasks.filter(t => t.isDone).reduce((s, t) => s + t.points, 0)
+        const allDone = tasks.length > 0 && tasks.every(t => t.isDone)
+        return { ...ps, tasks, dayScore, allDone }
+      })
+    }))
+
+    // 2. Atualização no Banco (isActive = 0)
+    try {
+      await updateTask(taskId, { isActive: 0 })
+      // Recarregar para garantir consistência
+      await get().loadAll()
+    } catch (err) {
+      console.error('deleteTask error:', err)
+      await get().loadAll() // Reverter em caso de erro
+    }
+  },
 }))
 
 export default useAppStore

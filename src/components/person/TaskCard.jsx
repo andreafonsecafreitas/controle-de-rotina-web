@@ -1,29 +1,16 @@
 import { memo, useCallback } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Check } from 'lucide-react'
+import { GripVertical, Check, Trash2 } from 'lucide-react'
 import useAppStore from '../../stores/useAppStore'
-
-const GRADIENTS = {
-  '#6C63FF': {
-    card: 'linear-gradient(135deg, rgba(108,99,255,0.12) 0%, rgba(108,99,255,0.04) 100%)',
-    cardDone: 'linear-gradient(135deg, rgba(108,99,255,0.06) 0%, rgba(108,99,255,0.02) 100%)',
-    badge: 'linear-gradient(135deg, #6C63FF, #8B85FF)',
-    glow: '0 4px 20px rgba(108,99,255,0.25)',
-    checkBg: 'linear-gradient(135deg, #6C63FF, #9B8CFF)',
-  },
-  '#FF6584': {
-    card: 'linear-gradient(135deg, rgba(255,101,132,0.12) 0%, rgba(255,101,132,0.04) 100%)',
-    cardDone: 'linear-gradient(135deg, rgba(255,101,132,0.06) 0%, rgba(255,101,132,0.02) 100%)',
-    badge: 'linear-gradient(135deg, #FF6584, #FF85A0)',
-    glow: '0 4px 20px rgba(255,101,132,0.25)',
-    checkBg: 'linear-gradient(135deg, #FF6584, #FF9BAD)',
-  },
-}
+import './TaskCard.css'
 
 function TaskCard({ task, personId, colorHex, subtitle }) {
   const toggleTask = useAppStore(s => s.toggleTask)
-  const gradient = GRADIENTS[colorHex] || GRADIENTS['#6C63FF']
+  const deleteTask = useAppStore(s => s.deleteTask)
+  
+  const isPurple = colorHex === '#6C63FF'
+  const variantClass = isPurple ? 'task-card-purple' : 'task-card-pink'
 
   const {
     attributes,
@@ -34,88 +21,96 @@ function TaskCard({ task, personId, colorHex, subtitle }) {
     isDragging,
   } = useSortable({ id: task.id })
 
-  const style = {
+  const dndStyle = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.7 : 1,
   }
 
   const handleToggle = useCallback((e) => {
-    if (e.target.closest('[data-drag-handle]')) return
+    if (e.target.closest('.no-toggle')) return
     toggleTask(task.id, personId, task.isDone)
   }, [task.id, task.isDone, personId, toggleTask])
 
+  const handleDelete = useCallback((e) => {
+    e.stopPropagation()
+    if (confirm(`Excluir a tarefa "${task.name}"?`)) {
+      deleteTask(task.id, personId)
+    }
+  }, [task.id, task.name, personId, deleteTask])
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
+    <div 
+      ref={setNodeRef} 
+      style={dndStyle} 
+      {...attributes}
+      className={isDragging ? 'task-card-dragging' : ''}
+    >
       <div
         onClick={handleToggle}
-        className="flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer select-none transition-all duration-200"
+        className={`task-card-container ${variantClass} ${task.isDone ? 'task-card-is-done' : ''}`}
         style={{
-          background: task.isDone ? gradient.cardDone : gradient.card,
-          border: `1px solid ${task.isDone ? colorHex + '15' : colorHex + '25'}`,
-          boxShadow: isDragging ? gradient.glow : 'none',
+          background: task.isDone ? 'var(--bg-done)' : 'var(--bg)',
+          border: `1px solid ${task.isDone ? 'var(--border-done)' : 'var(--border)'}`,
         }}
       >
         <button
-          data-drag-handle
+          className="task-card-drag-handle no-toggle"
           {...listeners}
           onClick={e => e.stopPropagation()}
-          className="p-1 -ml-1 text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none flex-shrink-0 transition-colors duration-150"
           aria-label="Arrastar"
         >
           <GripVertical size={14} strokeWidth={2.5} />
         </button>
 
         <div
-          className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center transition-all duration-300"
+          className="task-card-check-wrapper"
           style={{
-            background: task.isDone ? gradient.checkBg : 'transparent',
-            border: task.isDone ? 'none' : `2px solid ${colorHex}40`,
-            boxShadow: task.isDone ? `0 2px 10px ${colorHex}40` : 'none',
+            background: task.isDone ? 'var(--check-bg)' : 'transparent',
+            border: task.isDone ? 'none' : `2px solid var(--accent)40`,
+            boxShadow: task.isDone ? `0 2px 10px var(--accent)40` : 'none',
           }}
         >
-          {task.isDone && (
-            <Check size={14} strokeWidth={3} color="#fff" />
-          )}
+          {task.isDone && <Check size={14} strokeWidth={3} color="#fff" />}
         </div>
 
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+          className="task-card-icon-box"
           style={{
             background: `linear-gradient(135deg, ${colorHex}18, ${colorHex}08)`,
-            border: `1px solid ${colorHex}20`,
+            borderColor: `${colorHex}20`,
           }}
         >
           {task.icon || '⭐'}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p
-            className="text-sm font-semibold leading-snug break-words transition-all duration-200"
-            style={{
-              color: task.isDone ? 'rgba(255,255,255,0.35)' : '#EAEAEA',
-              textDecoration: task.isDone ? 'line-through' : 'none',
-              wordBreak: 'break-word'
-            }}
+        <div className="task-card-content">
+          <p 
+            className="task-card-name"
+            style={{ color: task.isDone ? 'rgba(255,255,255,0.35)' : '#EAEAEA' }}
           >
             {task.name}
           </p>
-          {subtitle && (
-            <p className="text-[10px] text-white/30 mt-0.5 truncate">{subtitle}</p>
-          )}
+          {subtitle && <p className="task-card-subtitle">{subtitle}</p>}
         </div>
 
         <span
-          className="text-xs font-extrabold flex-shrink-0 px-2.5 py-1.5 rounded-xl transition-all duration-200"
+          className="task-card-points"
           style={{
-            background: task.isDone ? `${colorHex}10` : gradient.badge,
+            background: task.isDone ? `${colorHex}10` : 'var(--badge)',
             color: task.isDone ? `${colorHex}80` : '#fff',
             boxShadow: task.isDone ? 'none' : `0 2px 8px ${colorHex}30`,
           }}
         >
           +{task.points}
         </span>
+
+        <button
+          onClick={handleDelete}
+          className="task-card-delete-btn no-toggle"
+          aria-label="Excluir tarefa"
+        >
+          <Trash2 size={16} strokeWidth={2} />
+        </button>
       </div>
     </div>
   )

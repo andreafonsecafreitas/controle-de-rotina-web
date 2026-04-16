@@ -1,0 +1,146 @@
+.task-card-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.task-card-container:active {
+  transform: scale(0.98);
+}
+
+.task-card-drag-handle {
+  padding: 4px;
+  margin-left: -4px;
+  color: rgba(255, 255, 255, 0.15);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-card-drag-handle:hover {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.task-card-drag-handle:active {
+  cursor: grabbing;
+}
+
+.task-card-check-wrapper {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.task-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.task-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: normal;
+  transition: all 0.2s ease;
+}
+
+.task-card-subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-card-points {
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.task-card-delete-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: -8px;
+}
+
+.task-card-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: rgba(239, 68, 68, 0.6);
+}
+
+/* Variant Styles */
+.task-card-purple {
+  --accent: #6C63FF;
+  --bg: linear-gradient(135deg, rgba(108, 99, 255, 0.12) 0%, rgba(108, 99, 255, 0.04) 100%);
+  --bg-done: linear-gradient(135deg, rgba(108, 99, 255, 0.06) 0%, rgba(108, 99, 255, 0.02) 100%);
+  --border: rgba(108, 99, 255, 0.25);
+  --border-done: rgba(108, 99, 255, 0.15);
+  --badge: linear-gradient(135deg, #6C63FF, #8B85FF);
+  --check-bg: linear-gradient(135deg, #6C63FF, #9B8CFF);
+}
+
+.task-card-pink {
+  --accent: #FF6584;
+  --bg: linear-gradient(135deg, rgba(255, 101, 132, 0.12) 0%, rgba(255, 101, 132, 0.04) 100%);
+  --bg-done: linear-gradient(135deg, rgba(255, 101, 132, 0.06) 0%, rgba(255, 101, 132, 0.02) 100%);
+  --border: rgba(255, 101, 132, 0.25);
+  --border-done: rgba(255, 101, 132, 0.15);
+  --badge: linear-gradient(135deg, #FF6584, #FF85A0);
+  --check-bg: linear-gradient(135deg, #FF6584, #FF9BAD);
+}
+
+.task-card-is-done .task-card-name {
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: line-through;
+}
+
+/* Glow on drag */
+.task-card-dragging {
+  z-index: 50;
+  opacity: 0.7;
+  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.25);
+}
