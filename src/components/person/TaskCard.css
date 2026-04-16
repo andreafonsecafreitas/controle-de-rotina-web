@@ -100,7 +100,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.45);
   transition: all 0.2s ease;
   cursor: pointer;
   flex-shrink: 0;
@@ -108,8 +108,8 @@
 }
 
 .task-card-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.15);
+  color: rgba(255, 99, 99, 1);
 }
 
 /* Variant Styles */
