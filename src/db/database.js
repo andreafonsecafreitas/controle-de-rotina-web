@@ -105,7 +105,7 @@ export async function getTasksForPerson(personId) {
 }
 
 export async function getTasksForPersonAndDate(personId, dateStr) {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr + 'T00:00:00')
   const weekday = date.getDay() === 0 ? 7 : date.getDay()
 
   const { data } = await supabase
