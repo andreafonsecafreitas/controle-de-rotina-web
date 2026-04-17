@@ -465,15 +465,15 @@ function NewTaskSheet({ initialTask, personStates, activePersonIdx, onSave, onCa
           </div>
 
           <div>
-            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">
-              Pontos · <span style={{ color: colorHex }} className="font-bold">{form.points}</span>
-            </label>
+            <label className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-1.5 block">Pontos</label>
             <input
-              type="range" min={5} max={100} step={5}
+              type="number"
+              min="1"
               value={form.points}
-              onChange={e => setForm(f => ({ ...f, points: Number(e.target.value) }))}
-              className="w-full h-1.5"
-              style={{ accentColor: colorHex }}
+              onChange={e => setForm(f => ({ ...f, points: e.target.value === '' ? '' : Number(e.target.value) }))}
+              placeholder="Ex: 10"
+              className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-3.5 py-3 text-sm text-white outline-none focus:border-white/25 transition-colors placeholder:text-white/25"
+              style={{ borderColor: form.points ? colorHex + '40' : undefined }}
             />
           </div>
 
