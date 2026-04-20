@@ -1,8 +1,8 @@
 .task-card-container {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 18px;
+  gap: 8px;
+  padding: 14px 14px;
   border-radius: 20px;
   cursor: pointer;
   user-select: none;
@@ -39,8 +39,8 @@
   touch-action: none;
   flex-shrink: 0;
   transition: color 0.15s ease;
-  width: 28px;
-  height: 44px;
+  width: 24px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,8 +57,8 @@
 }
 
 .task-card-check-wrapper {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
   flex-shrink: 0;
   display: flex;
@@ -68,14 +68,14 @@
 }
 
 .task-card-icon-box {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 32px;
+  font-size: 36px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   line-height: 1;
 }
@@ -90,20 +90,20 @@
 }
 
 .task-card-name {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1.35;
   white-space: normal;
   transition: all 0.2s ease;
   letter-spacing: -0.01em;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .task-card-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.45);
   font-weight: 500;
   overflow: hidden;
@@ -113,10 +113,10 @@
 }
 
 .task-card-points {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   flex-shrink: 0;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 12px;
   transition: all 0.2s ease;
   letter-spacing: -0.02em;
@@ -178,69 +178,69 @@
 /* Tablet / Desktop optimizations */
 @media (min-width: 1024px) {
   .task-card-container {
-    padding: 20px 20px;
-    gap: 16px;
-    min-height: 84px;
+    padding: 16px 16px;
+    gap: 10px;
+    min-height: 90px;
     border-radius: 22px;
   }
 
   .task-card-icon-box {
-    width: 60px;
-    height: 60px;
-    font-size: 34px;
+    width: 68px;
+    height: 68px;
+    font-size: 42px;
     border-radius: 18px;
   }
 
   .task-card-check-wrapper {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
   }
 
   .task-card-name {
-    font-size: 20px;
+    font-size: 24px;
     line-height: 1.35;
   }
 
   .task-card-subtitle {
-    font-size: 14px;
+    font-size: 16px;
     margin-top: 2px;
   }
 
   .task-card-points {
-    font-size: 16px;
-    padding: 11px 16px;
+    font-size: 18px;
+    padding: 14px 20px;
     border-radius: 14px;
-    min-width: 54px;
+    min-width: 60px;
   }
 
   .task-card-delete-btn {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     border-radius: 12px;
   }
 
   .task-card-drag-handle {
-    width: 32px;
-    height: 48px;
+    width: 28px;
+    height: 52px;
   }
 }
 
 /* Large Desktop */
 @media (min-width: 1280px) {
   .task-card-container {
-    padding: 22px 22px;
-    gap: 18px;
-    min-height: 88px;
+    padding: 20px 20px;
+    gap: 12px;
+    min-height: 96px;
   }
 
   .task-card-icon-box {
-    width: 64px;
-    height: 64px;
-    font-size: 38px;
+    width: 76px;
+    height: 76px;
+    font-size: 48px;
   }
 
   .task-card-name {
-    font-size: 22px;
+    font-size: 26px;
   }
 }
