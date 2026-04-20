@@ -52,7 +52,7 @@ const GlobalChallengeCard = memo(function GlobalChallengeCard({ task, personStat
         <span className="text-xl flex-shrink-0">{task.icon}</span>
         <div className="flex-1 min-w-0">
           <p
-            className="text-sm font-medium leading-snug"
+            className="text-base font-medium leading-snug"
             style={{ color: isWon ? '#8A8FA8' : '#EAEAEA', textDecoration: isWon ? 'line-through' : 'none' }}
           >
             {task.name}

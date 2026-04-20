@@ -15,11 +15,11 @@ export default function TodayTab({ onManageTasks }) {
     <>
       <div className="hidden tablet:flex tablet:flex-col h-full gap-4">
         <GlobalChallengesSection />
-        <div className="grid grid-cols-2 gap-4 flex-1">
+        <div className="grid grid-cols-2 gap-3 lg:gap-5 flex-1">
           {personStates.map((ps, i) => (
             <div
               key={ps.person.id}
-              className="bg-[#121520] rounded-3xl p-5 border"
+              className="bg-[#121520] rounded-3xl p-3 lg:p-5 border"
               style={{ borderColor: COLORS[i] + '26' }}
             >
             <PersonColumn
@@ -34,12 +34,12 @@ export default function TodayTab({ onManageTasks }) {
 
       <div className="tablet:hidden flex flex-col h-full">
         <GlobalChallengesSection />
-        <div className="flex mb-4 bg-white/[0.03] rounded-full p-1 gap-0.5 border border-white/5">
+        <div className="flex mb-4 bg-white/[0.03] rounded-full p-1.5 gap-1 border border-white/5">
           {personStates.map((ps, i) => (
             <button
               key={ps.person.id}
               onClick={() => setActivePerson(i)}
-              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-full text-sm font-bold transition-all duration-200 cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-full text-base font-bold transition-all duration-200 cursor-pointer"
               style={{
                 background: activePerson === i ? COLORS[i] : 'transparent',
                 color: activePerson === i ? '#fff' : 'rgba(255,255,255,0.4)',
@@ -47,7 +47,7 @@ export default function TodayTab({ onManageTasks }) {
               }}
             >
               <span
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold"
                 style={{
                   background: activePerson === i ? 'rgba(255,255,255,0.25)' : COLORS[i] + '35',
                   color: activePerson === i ? '#fff' : COLORS[i],

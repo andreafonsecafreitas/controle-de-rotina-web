@@ -68,7 +68,7 @@ function PersonColumn({ personState, index, onManageTasks }) {
 
       <CelebrationBanner show={personState.allDone} color={colorHex} name={personState.person.name} />
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-0.5" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1" style={{ maxHeight: 'calc(100vh - 320px)' }}>
         {personState.tasks.length === 0 ? (
           <EmptyState
             icon="📋"
@@ -77,7 +77,7 @@ function PersonColumn({ personState, index, onManageTasks }) {
             action={
               <button
                 onClick={() => onManageTasks(personState.person.id)}
-                className="text-xs font-semibold px-4 py-2 rounded-full cursor-pointer transition-colors"
+                className="text-sm font-semibold px-5 py-2.5 rounded-full cursor-pointer transition-colors"
                 style={{ background: `${colorHex}20`, color: colorHex }}
               >
                 Adicionar tarefa
@@ -92,9 +92,9 @@ function PersonColumn({ personState, index, onManageTasks }) {
           >
             {pending.length > 0 && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5 px-1 flex items-center gap-2">
+                <p className="text-xs lg:text-sm font-bold uppercase tracking-widest text-white/35 mb-4 px-1 flex items-center gap-2">
                   Pendentes
-                  <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold" style={{ background: colorHex + '20', color: colorHex }}>
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-extrabold" style={{ background: colorHex + '20', color: colorHex }}>
                     {pending.length}
                   </span>
                 </p>
@@ -102,7 +102,7 @@ function PersonColumn({ personState, index, onManageTasks }) {
                   items={pending.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {pending.map(t => (
                       <TaskCard
                         key={t.id}
@@ -117,10 +117,10 @@ function PersonColumn({ personState, index, onManageTasks }) {
               </div>
             )}
             {done.length > 0 && (
-              <div className={pending.length > 0 ? 'mt-5' : ''}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-2.5 px-1 flex items-center gap-2">
+              <div className={pending.length > 0 ? 'mt-6' : ''}>
+                <p className="text-xs lg:text-sm font-bold uppercase tracking-widest text-white/35 mb-4 px-1 flex items-center gap-2">
                   Concluídas
-                  <span className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold" style={{ background: '#2ECC7120', color: '#2ECC71' }}>
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-extrabold" style={{ background: '#2ECC7120', color: '#2ECC71' }}>
                     {done.length}
                   </span>
                 </p>
@@ -128,7 +128,7 @@ function PersonColumn({ personState, index, onManageTasks }) {
                   items={done.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {done.map(t => (
                       <TaskCard
                         key={t.id}

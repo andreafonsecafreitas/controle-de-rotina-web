@@ -11,28 +11,30 @@ function PersonHeader({ personState, colorHex }) {
   const pct = Math.round(Math.min(100, (dayScore / person.metaPoints) * 100))
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-3 mb-3">
+    <div className="mb-5">
+      <div className="flex items-center gap-3.5 mb-4">
         <div
-          className="w-11 h-11 rounded-full flex items-center justify-center text-base font-extrabold flex-shrink-0"
+          className="w-13 h-13 rounded-full flex items-center justify-center text-xl font-extrabold flex-shrink-0"
           style={{
+            width: '56px',
+            height: '56px',
             background: GRADIENTS[colorHex] || GRADIENTS['#6C63FF'],
             color: '#fff',
-            boxShadow: `0 4px 16px ${colorHex}35`,
+            boxShadow: `0 6px 20px ${colorHex}45`,
           }}
         >
           {person.name[0]?.toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-extrabold text-base text-white leading-tight truncate">{person.name}</h2>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[11px] font-semibold" style={{ color: colorHex }}>
+          <h2 className="font-extrabold text-xl lg:text-2xl text-white leading-tight truncate">{person.name}</h2>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="text-[14px] font-semibold" style={{ color: colorHex }}>
               {dayScore} pts hoje
             </span>
             {streak > 0 && (
               <>
                 <span className="text-white/20">·</span>
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-orange-400">
+                <span className="flex items-center gap-1 text-[14px] font-semibold text-orange-400">
                   {streak}d seguidos
                 </span>
               </>
@@ -40,20 +42,20 @@ function PersonHeader({ personState, colorHex }) {
           </div>
         </div>
         <div
-          className="rounded-xl px-2.5 py-1.5 text-center min-w-[48px]"
+          className="rounded-xl px-3 py-2 text-center min-w-[64px]"
           style={{
-            background: `linear-gradient(135deg, ${colorHex}18, ${colorHex}08)`,
-            border: `1px solid ${colorHex}30`,
+            background: `linear-gradient(135deg, ${colorHex}20, ${colorHex}08)`,
+            border: `1px solid ${colorHex}35`,
           }}
         >
-          <div className="font-extrabold text-sm leading-none" style={{ color: colorHex }}>{pct}%</div>
-          <div className="text-[9px] text-white/40 mt-0.5 uppercase tracking-wider">meta</div>
+          <div className="font-extrabold text-lg leading-none" style={{ color: colorHex }}>{pct}%</div>
+          <div className="text-[11px] text-white/40 mt-1 uppercase tracking-wider font-semibold">meta</div>
         </div>
       </div>
 
       <div>
-        <ProgressBar value={dayScore} max={person.metaPoints} color={colorHex} height={6} />
-        <div className="flex justify-between text-[10px] text-white/35 mt-1.5">
+        <ProgressBar value={dayScore} max={person.metaPoints} color={colorHex} height={12} />
+        <div className="flex justify-between text-[13px] text-white/40 mt-2.5 font-medium">
           <span>{dayScore} pts</span>
           <span>meta: {person.metaPoints}</span>
         </div>

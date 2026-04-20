@@ -56,50 +56,51 @@ export default function HomePage() {
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })
 
   return (
-    <div className="flex flex-col h-screen bg-[#0B0D14] overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-40" style={{
-        background: 'radial-gradient(circle at 20% 0%, rgba(108,99,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 100%, rgba(255,101,132,0.12) 0%, transparent 50%)',
-      }} />
+    <div className="flex justify-center bg-[#0B0D14] h-screen overflow-hidden">
+      <div className="flex flex-col w-full max-w-6xl h-full relative">
+        <div className="absolute inset-0 pointer-events-none opacity-40 mx-auto max-w-6xl w-full" style={{
+          background: 'radial-gradient(circle at 20% 0%, rgba(108,99,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 100%, rgba(255,101,132,0.12) 0%, transparent 50%)',
+        }} />
 
-      <header className="relative flex items-center justify-between px-5 pt-5 pb-4 flex-shrink-0">
+        <header className="relative flex items-center justify-between px-5 pt-6 pb-5 flex-shrink-0">
         <div>
-          <h1 className="font-extrabold text-2xl text-white leading-tight tracking-tight">Rotina</h1>
-          <p className="text-xs text-white/45 capitalize mt-0.5">{today}</p>
+          <h1 className="font-extrabold text-3xl lg:text-4xl text-white leading-tight tracking-tight">Rotina</h1>
+          <p className="text-sm lg:text-base text-white/45 capitalize mt-1">{today}</p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => loadAll()}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="w-11 h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
             title="Atualizar"
           >
-            <RefreshCw size={16} className={`text-white/60 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw size={20} className={`text-white/60 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={() => openManageTasks(null)}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="w-11 h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
             title="Adicionar tarefa"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white/70">
-              <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white/70">
+              <path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="w-11 h-11 lg:w-12 lg:h-12 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] transition-colors cursor-pointer"
             title="Configurações"
           >
-            <Settings size={16} className="text-white/60" />
+            <Settings size={20} className="text-white/60" />
           </button>
         </div>
       </header>
 
-      <nav className="relative flex px-5 gap-1 mb-3 flex-shrink-0">
-        <div className="flex-1 flex bg-white/[0.03] rounded-full p-1 gap-0.5 border border-white/5">
+      <nav className="relative flex px-5 gap-1 mb-4 flex-shrink-0">
+        <div className="flex-1 flex bg-white/[0.03] rounded-full p-1.5 gap-1 border border-white/5">
           {TABS.map((tab, i) => (
             <button
               key={tab.label}
               onClick={() => setActiveTab(i)}
-              className="flex-1 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer"
+              className="flex-1 py-3 lg:py-3.5 rounded-full text-sm lg:text-base font-bold transition-all duration-200 cursor-pointer"
               style={{
                 background: activeTab === i ? 'rgba(255,255,255,0.08)' : 'transparent',
                 color: activeTab === i ? '#fff' : 'rgba(255,255,255,0.4)',
