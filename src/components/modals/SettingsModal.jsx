@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Download, Upload } from 'lucide-react'
+import { X, Download, Upload, TriangleAlert } from 'lucide-react'
 import { updatePerson, exportAllData, importAllData } from '../../db/database'
 import { useShallow } from 'zustand/react/shallow'
 import useAppStore from '../../stores/useAppStore'
@@ -8,15 +8,18 @@ import useAppStore from '../../stores/useAppStore'
 const COLORS = ['#6C63FF', '#FF6584']
 
 export default function SettingsModal({ open, onClose }) {
-  const { personStates, loadAll } = useAppStore(useShallow(s => ({
+  const { personStates, loadAll, resetProgress } = useAppStore(useShallow(s => ({
     personStates: s.personStates,
     loadAll: s.loadAll,
+    resetProgress: s.resetProgress,
   })))
   const [fields, setFields] = useState([])
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState(null)
+  const [resetConfirm, setResetConfirm] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const fileRef = useRef(null)
 
   useEffect(() => {
@@ -163,7 +166,7 @@ export default function SettingsModal({ open, onClose }) {
             )}
           </div>
 
-          <div className="p-5 border-t border-border mt-3">
+          <div className="p-5 border-t border-border mt-3 space-y-3">
             <button
               onClick={handleSave}
               disabled={saving}
@@ -172,6 +175,52 @@ export default function SettingsModal({ open, onClose }) {
             >
               {saving ? 'Salvando...' : 'Salvar configurações'}
             </button>
+          </div>
+
+          <div className="px-5 pb-6">
+            <div className="rounded-card border border-red-500/25 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <TriangleAlert size={14} className="text-red-400 flex-shrink-0" />
+                <p className="text-xs font-bold uppercase tracking-widest text-red-400">Zona de Risco</p>
+              </div>
+              <p className="text-xs text-white/40 leading-relaxed">
+                Apaga todo o histórico de pontos, ofensivas e desafios concluídos. As tarefas e configurações não são afetadas.
+              </p>
+              {!resetConfirm ? (
+                <button
+                  onClick={() => setResetConfirm(true)}
+                  className="w-full py-2.5 rounded-card border border-red-500/30 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                >
+                  Zerar todo o histórico
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-red-300 text-center font-semibold">Tem certeza? Isso não pode ser desfeito.</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setResetConfirm(false)}
+                      className="flex-1 py-2.5 rounded-card border border-border text-sm font-semibold text-white/50 hover:bg-elevated transition-all cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={resetting}
+                      onClick={async () => {
+                        setResetting(true)
+                        await resetProgress()
+                        setResetting(false)
+                        setResetConfirm(false)
+                        onClose()
+                      }}
+                      className="flex-1 py-2.5 rounded-card text-sm font-bold text-white transition-all cursor-pointer disabled:opacity-60"
+                      style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                    >
+                      {resetting ? 'Zerando...' : 'Confirmar reset'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </motion.div>
       </motion.div>

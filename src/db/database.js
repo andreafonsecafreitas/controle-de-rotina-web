@@ -402,3 +402,10 @@ export async function importAllData(data) {
     )
   }
 }
+
+export async function resetAllProgress() {
+  await supabase.from('daily_summary').delete().neq('id', 0)
+  await supabase.from('task_completions').delete().neq('id', 0)
+  await supabase.from('tasks').update({ global_winner_id: null }).neq('id', 0)
+  await supabase.from('persons').update({ best_streak: 0 }).neq('id', 0)
+}

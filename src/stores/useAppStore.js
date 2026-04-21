@@ -12,6 +12,7 @@ import {
   getTaskCompletionByTaskDate,
   upsertDailySummary,
   updatePerson,
+  resetAllProgress,
 } from '../db/database'
 import { todayStr, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from '../services/dateUtils'
 import { calculateStreakFromSummaries, closeMissedDaysFromSummaries } from '../services/streakService'
@@ -375,6 +376,17 @@ const useAppStore = create((set, get) => ({
     } catch (err) {
       console.error('deleteTask error:', err)
       await get().loadAll() // Reverter em caso de erro
+    }
+  },
+
+  resetProgress: async () => {
+    set({ isLoading: true })
+    try {
+      await resetAllProgress()
+      await get().loadAll()
+    } catch (err) {
+      console.error('resetProgress error:', err)
+      set({ isLoading: false })
     }
   },
 }))
