@@ -5,6 +5,7 @@ import useAppStore from '../stores/useAppStore'
 import TodayTab from '../components/tabs/TodayTab'
 import PeriodTab from '../components/tabs/PeriodTab'
 import RankingTab from '../components/tabs/RankingTab'
+import HistoryTab from '../components/tabs/HistoryTab'
 import { todayStr } from '../services/dateUtils'
 
 const ManageTasksModal = lazy(() => import('../components/modals/ManageTasksModal'))
@@ -15,6 +16,7 @@ const TABS = [
   { label: 'Semana' },
   { label: 'Mês' },
   { label: 'Ranking' },
+  { label: 'Histórico' },
 ]
 
 export default function HomePage() {
@@ -127,6 +129,7 @@ export default function HomePage() {
             {activeTab === 1 && <PeriodTab mode="week" />}
             {activeTab === 2 && <PeriodTab mode="month" />}
             {activeTab === 3 && <RankingTab />}
+            {activeTab === 4 && <HistoryTab />}
           </>
         )}
       </main>

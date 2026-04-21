@@ -409,3 +409,31 @@ export async function resetAllProgress() {
   await supabase.from('tasks').update({ global_winner_id: null }).neq('id', 0)
   await supabase.from('persons').update({ best_streak: 0 }).neq('id', 0)
 }
+
+export async function getFullHistory() {
+  const [{ data: completions }, { data: tasks }, { data: persons }] = await Promise.all([
+    supabase.from('task_completions').select('*').order('date', { ascending: false }).order('completed_at', { ascending: false }),
+    supabase.from('tasks').select('id, name, icon, is_global'),
+    supabase.from('persons').select('id, name'),
+  ])
+
+  const taskMap = new Map((tasks || []).map(t => [t.id, t]))
+  const personMap = new Map((persons || []).map(p => [p.id, p]))
+
+  return (completions || []).map(c => ({
+    id: c.id,
+    taskId: c.task_id,
+    personId: c.person_id,
+    date: c.date,
+    points: c.points_snapshot,
+    completedAt: c.completed_at,
+    taskName: taskMap.get(c.task_id)?.name || 'Tarefa removida',
+    taskIcon: taskMap.get(c.task_id)?.icon || '⭐',
+    isGlobal: taskMap.get(c.task_id)?.is_global === 1,
+    personName: personMap.get(c.person_id)?.name || '?',
+  }))
+}
+
+export async function deleteCompletion(completionId) {
+  await supabase.from('task_completions').delete().eq('id', completionId)
+}
